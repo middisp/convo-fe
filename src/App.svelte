@@ -1,20 +1,6 @@
 <script>
   import router, { curRoute } from "./router.js";
-  import RouterLink from "./components/RouterLink.svelte";
-
-  import { onMount } from "svelte";
-
-  onMount(() => {
-    curRoute.set(window.location.pathname);
-
-    if (!history.state) {
-      window.history.replaceState(
-        { path: window.location.pathname },
-        "",
-        window.location.href
-      );
-    }
-  });
+  import Navigation from "./components/Navigation.svelte";
 
   function handleBackNavigation(event) {
     curRoute.set(event.state.path);
@@ -22,9 +8,9 @@
 </script>
 
 <svelte:window on:popstate={handleBackNavigation} />
-<RouterLink page={{ path: '/home', name: 'Home' }} />
-<RouterLink page={{ path: '/about', name: 'About' }} />
 
 <main id="pageContent">
+  <Navigation />
   <svelte:component this={router[$curRoute]} />
+
 </main>
