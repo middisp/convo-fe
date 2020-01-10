@@ -1,19 +1,19 @@
 <script>
-  import { curRoute } from "../router.js";
+  import { curRoute } from "../store.js";
 
   export let page = {
     path: "/home",
     name: "Home"
   };
 
-  function redirectTo(event) {
+  const navigateTo = event => {
     curRoute.set(event.target.pathname);
     window.history.pushState(
       { path: page.path },
       "",
       window.location.origin + page.path
     );
-  }
+  };
 </script>
 
-<a href={page.path} on:click|preventDefault={redirectTo}>{page.name}</a>
+<a href={page.path} on:click|preventDefault={navigateTo}>{page.name}</a>

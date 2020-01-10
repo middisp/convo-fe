@@ -1,38 +1,49 @@
 <script>
-  import { writable } from "svelte/store";
-  import { curRoute } from "./router.js";
+  import { curRoute, user } from "./store.js";
 
-  let username = "";
+  import Input from "./components/Input.svelte";
+
+  let email = "";
   let password = "";
+  let error = false;
 
   const login = () => {
-    fetch("localhost:3000/auth", {
+    // Handle validation
+    console.log({ email, password });
+    fetch("http://localhost:3000/login", {
       method: "post",
-      body: JSON.stringify({ username, password })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
     })
-      .then(res => res.json)
-      .then(user => writable(user))
-      .then(() => curRoute.set(window.location.pathname))
-      .catch(e => console.log(`Err: ${e}`));
+      .then(res => res.json())
+      .then(result => {
+        if (!result.statusCode) {
+          return ($user = result);
+        } else {
+          throw new Error(result.message);
+        }
+        // Handle errors here
+      })
+      .then()
+      .catch(e => console.log(e));
   };
 </script>
-
-<style>
-  input {
-    display: block;
-  }
-</style>
 
 <main>
   <h1>Hi!</h1>
   <form action="post">
-    <label for="username">email:</label>
-    <input type="text" id="username" name="username" bind:value={username} />
-    <label for="password">password:</label>
-    <input
+    <Input
+      {error}
+      type="text"
+      name="email"
+      labelText="email"
+      bind:value={email} />
+    <Input
+      {error}
       type="password"
       id="password"
       name="password"
+      labelText="password"
       bind:value={password} />
     <button type="submit" on:click|preventDefault={login}>Login</button>
   </form>

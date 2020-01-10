@@ -1,8 +1,9 @@
 <script>
-  import router, { curRoute } from "../router.js";
-  import RouterLink from "../components/RouterLink.svelte";
-
   import { onMount } from "svelte";
+
+  import router from "../router.js";
+  import { curRoute } from "../store.js";
+  import RouterLink from "../components/RouterLink.svelte";
 
   onMount(() => {
     curRoute.set(window.location.pathname);

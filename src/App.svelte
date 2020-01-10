@@ -1,5 +1,6 @@
 <script>
-  import router, { curRoute } from "./router.js";
+  import router from "./router.js";
+  import { curRoute } from "./store.js";
   import Navigation from "./components/Navigation.svelte";
 
   function handleBackNavigation(event) {
@@ -9,8 +10,12 @@
 
 <svelte:window on:popstate={handleBackNavigation} />
 
+<svelte:head>
+  <title>Convo - {router[$curRoute].title}</title>
+</svelte:head>
+
 <main id="pageContent">
   <Navigation />
-  <svelte:component this={router[$curRoute]} />
+  <svelte:component this={router[$curRoute].view} />
 
 </main>
