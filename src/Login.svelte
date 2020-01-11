@@ -2,13 +2,13 @@
   import { curRoute, user } from "./store.js";
 
   import Input from "./components/Input.svelte";
+  import Button from "./components/Button.svelte";
 
   let email = "";
   let password = "";
 
   const login = () => {
     // Handle validation
-    console.log({ email, password });
     fetch("http://localhost:3000/login", {
       method: "post",
       headers: { "Content-Type": "application/json" },
@@ -31,17 +31,22 @@
 <main>
   <h1>Hi!</h1>
   <form action="post">
-    <Input type="text" name="email" labelText="email" bind:value={email} />
+    <Input
+      type="text"
+      name="email"
+      labelText="email"
+      bind:value={email}
+      required="required" />
     <Input
       type="password"
       name="password"
       labelText="password"
-      bind:value={password} />
-    <button
+      bind:value={password}
+      required="required" />
+    <Button
       type="submit"
-      on:click|preventDefault={login}
-      disabled={!email.length && !password.length}>
-      Login
-    </button>
+      on:click={login}
+      disabled={!email.length || !password.length}
+      text="Login" />
   </form>
 </main>

@@ -2,8 +2,8 @@
   import { curRoute } from "../store.js";
 
   export let page = {
-    path: "/home",
-    name: "Home"
+    path: "/",
+    name: "Login"
   };
 
   const navigateTo = event => {

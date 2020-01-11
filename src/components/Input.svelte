@@ -6,6 +6,7 @@
   export let value;
   export let type = "text";
   export let error = false;
+  export let required;
 
   const handleInput = e => {
     value = type.match(/^(number|range)$/) ? +e.target.value : e.target.value;
@@ -39,4 +40,5 @@
   id={name}
   {type}
   on:input={handleInput}
-  on:blur={handleBlur} />
+  on:blur={handleBlur}
+  {required} />
