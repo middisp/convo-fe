@@ -23,7 +23,14 @@
         }
         // Handle errors here
       })
-      .then()
+      .then(() => {
+        curRoute.set("/home");
+        window.history.pushState(
+          { path: "/home" },
+          "",
+          window.location.origin + "/home"
+        );
+      })
       .catch(e => console.log(e));
   };
 </script>

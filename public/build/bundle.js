@@ -927,10 +927,10 @@ var app = (function () {
     			create_component(input1.$$.fragment);
     			t3 = space();
     			create_component(button.$$.fragment);
-    			add_location(h1, file$2, 31, 2, 760);
+    			add_location(h1, file$2, 38, 2, 944);
     			attr_dev(form, "action", "post");
-    			add_location(form, file$2, 32, 2, 776);
-    			add_location(main, file$2, 30, 0, 750);
+    			add_location(form, file$2, 39, 2, 960);
+    			add_location(main, file$2, 37, 0, 934);
     		},
     		l: function claim(nodes) {
     			throw new Error_1("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1020,7 +1020,10 @@ var app = (function () {
     			} else {
     				throw new Error(result.message);
     			}
-    		}).then().catch(e => console.log(e));
+    		}).then(() => {
+    			curRoute.set("/home");
+    			window.history.pushState({ path: "/home" }, "", window.location.origin + "/home");
+    		}).catch(e => console.log(e));
     	};
 
     	function input0_value_binding(value) {
