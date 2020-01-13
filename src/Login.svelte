@@ -16,12 +16,10 @@
     })
       .then(res => res.json())
       .then(result => {
-        if (!result.statusCode) {
-          return ($user = result);
-        } else {
+        if (result.statusCode) {
           throw new Error(result.message);
         }
-        // Handle errors here
+        return ($user = result);
       })
       .then(() => {
         curRoute.set("/home");
