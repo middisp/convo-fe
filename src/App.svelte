@@ -1,6 +1,6 @@
 <script>
   import router from "./router.js";
-  import { curRoute } from "./store.js";
+  import { curRoute, user } from "./store.js";
   import Navigation from "./components/Navigation.svelte";
 
   function handleBackNavigation(event) {
@@ -17,5 +17,5 @@
 <main id="pageContent">
   <Navigation />
   <svelte:component this={router[$curRoute].view} />
-
+  {JSON.stringify($user)}
 </main>

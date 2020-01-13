@@ -13,7 +13,6 @@
   };
 
   const handleBlur = e => {
-    console.log((error = !e.target.value));
     error = !e.target.value;
   };
 </script>

@@ -6,6 +6,7 @@
 
   let email = "";
   let password = "";
+  let error;
 
   const login = () => {
     // Handle validation
@@ -17,9 +18,11 @@
       .then(res => res.json())
       .then(result => {
         if (result.statusCode) {
+          error = result;
           throw new Error(result.message);
         }
-        return ($user = result);
+        console.log(result);
+        user.set(result);
       })
       .then(() => {
         curRoute.set("/home");
@@ -35,6 +38,9 @@
 
 <main>
   <h1>Hi!</h1>
+  {#if error}
+    <div>{error.message}</div>
+  {/if}
   <form action="post">
     <Input
       type="text"
