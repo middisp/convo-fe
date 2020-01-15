@@ -1,6 +1,6 @@
 <script>
   import router from "./router.js";
-  import { curRoute, user } from "./store.js";
+  import { curRoute, user, isLoggedIn } from "./store.js";
   import Navigation from "./components/Navigation.svelte";
 
   function handleBackNavigation(event) {
@@ -15,7 +15,9 @@
 </svelte:head>
 
 <main id="pageContent">
-  <Navigation />
+  {#if isLoggedIn}
+    <Navigation />
+  {/if}
   <svelte:component this={router[$curRoute].view} />
   {JSON.stringify($user)}
 </main>

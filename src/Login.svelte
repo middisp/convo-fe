@@ -1,5 +1,5 @@
 <script>
-  import { curRoute, user } from "./store.js";
+  import { curRoute, user, isLoggedIn } from "./store.js";
 
   import Input from "./components/Input.svelte";
   import Button from "./components/Button.svelte";
@@ -9,7 +9,9 @@
   let error;
 
   const login = () => {
-    // Handle validation
+    if (!email || !password) {
+      return (error = "Please provide your login details");
+    }
     fetch("http://localhost:3000/login", {
       method: "post",
       headers: { "Content-Type": "application/json" },
@@ -19,18 +21,16 @@
       .then(result => {
         if (result.statusCode) {
           error = result;
-          throw new Error(result.message);
+        } else {
+          user.set(result);
+          isLoggedIn.set(true);
+          curRoute.set("/home");
+          window.history.pushState(
+            { path: "/home" },
+            "",
+            window.location.origin + "/home"
+          );
         }
-        console.log(result);
-        user.set(result);
-      })
-      .then(() => {
-        curRoute.set("/home");
-        window.history.pushState(
-          { path: "/home" },
-          "",
-          window.location.origin + "/home"
-        );
       })
       .catch(e => console.log(e));
   };
@@ -39,7 +39,7 @@
 <main>
   <h1>Hi!</h1>
   {#if error}
-    <div>{error.message}</div>
+    <div>{error.message || error}</div>
   {/if}
   <form action="post">
     <Input
