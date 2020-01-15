@@ -1,5 +1,5 @@
 <script>
-  import { curRoute, user, isLoggedIn } from "./store.js";
+  import { curRoute, user, isLoggedIn, token } from "./store.js";
 
   import Input from "./components/Input.svelte";
   import Button from "./components/Button.svelte";
@@ -7,6 +7,10 @@
   let email = "";
   let password = "";
   let error;
+
+  const saveToSession = data => {
+    window.sessionStorage.setItem("token", data);
+  };
 
   const login = () => {
     if (!email || !password) {
@@ -19,12 +23,14 @@
     })
       .then(res => res.json())
       .then(result => {
+        console.log(result);
         if (result.statusCode) {
           error = result;
         } else {
-          user.set(result);
+          user.set(result.user);
           isLoggedIn.set(true);
           curRoute.set("/home");
+          token.set(result.token);
           window.history.pushState(
             { path: "/home" },
             "",
