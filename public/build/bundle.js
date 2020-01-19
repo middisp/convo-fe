@@ -868,7 +868,7 @@ var app = (function () {
     		c: function create() {
     			div = element("div");
     			t = text(t_value);
-    			add_location(div, file$2, 47, 4, 1219);
+    			add_location(div, file$2, 47, 4, 1216);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -967,10 +967,10 @@ var app = (function () {
     			create_component(input1.$$.fragment);
     			t4 = space();
     			create_component(button.$$.fragment);
-    			add_location(h1, file$2, 45, 2, 1186);
+    			add_location(h1, file$2, 45, 2, 1183);
     			attr_dev(form, "action", "post");
-    			add_location(form, file$2, 49, 2, 1267);
-    			add_location(main, file$2, 44, 0, 1176);
+    			add_location(form, file$2, 49, 2, 1264);
+    			add_location(main, file$2, 44, 0, 1173);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1084,9 +1084,9 @@ var app = (function () {
     			} else {
     				user.set(result.user);
     				isLoggedIn.set(true);
-    				curRoute.set("/messages");
+    				curRoute.set("/threads");
     				token.set(result.token);
-    				window.history.pushState({ path: "/messages" }, "", window.location.origin + "/messages");
+    				window.history.pushState({ path: "/threads" }, "", window.location.origin + "/threads");
     			}
     		}).catch(e => console.log(e));
     	};
@@ -1455,7 +1455,7 @@ var app = (function () {
         view: Login,
         title: 'Login'
       },
-      '/messages': {
+      '/threads': {
         view: Threads,
         title: 'Threads'
       },
@@ -1469,7 +1469,7 @@ var app = (function () {
 
     const file$5 = "src\\components\\Header.svelte";
 
-    // (36:2) {#if showNav}
+    // (33:2) {#if showNav}
     function create_if_block$2(ctx) {
     	let button;
 
@@ -1477,8 +1477,8 @@ var app = (function () {
     		c: function create() {
     			button = element("button");
     			button.textContent = "Menu";
-    			attr_dev(button, "class", "svelte-1p9181i");
-    			add_location(button, file$5, 36, 4, 617);
+    			attr_dev(button, "class", "svelte-1yj33f8");
+    			add_location(button, file$5, 33, 4, 521);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, button, anchor);
@@ -1492,7 +1492,7 @@ var app = (function () {
     		block,
     		id: create_if_block$2.name,
     		type: "if",
-    		source: "(36:2) {#if showNav}",
+    		source: "(33:2) {#if showNav}",
     		ctx
     	});
 
@@ -1517,11 +1517,11 @@ var app = (function () {
     			t2 = space();
     			if (if_block) if_block.c();
     			attr_dev(span, "class", "dotAnim");
-    			add_location(span, file$5, 33, 4, 555);
-    			attr_dev(h1, "class", "svelte-1p9181i");
-    			add_location(h1, file$5, 31, 2, 534);
-    			attr_dev(header, "class", "svelte-1p9181i");
-    			add_location(header, file$5, 30, 0, 522);
+    			add_location(span, file$5, 30, 4, 459);
+    			attr_dev(h1, "class", "svelte-1yj33f8");
+    			add_location(h1, file$5, 28, 2, 438);
+    			attr_dev(header, "class", "svelte-1yj33f8");
+    			add_location(header, file$5, 27, 0, 426);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1830,7 +1830,7 @@ var app = (function () {
     const { window: window_1 } = globals;
     const file$8 = "src\\App.svelte";
 
-    // (43:0) {#if $isLoggedIn}
+    // (40:0) {#if $isLoggedIn}
     function create_if_block$3(ctx) {
     	let current;
     	const navigation = new Navigation({ $$inline: true });
@@ -1861,7 +1861,7 @@ var app = (function () {
     		block,
     		id: create_if_block$3.name,
     		type: "if",
-    		source: "(43:0) {#if $isLoggedIn}",
+    		source: "(40:0) {#if $isLoggedIn}",
     		ctx
     	});
 
@@ -1904,7 +1904,7 @@ var app = (function () {
     			main = element("main");
     			if (switch_instance) create_component(switch_instance.$$.fragment);
     			attr_dev(main, "id", "pageContent");
-    			add_location(main, file$8, 45, 0, 1103);
+    			add_location(main, file$8, 42, 0, 1082);
 
     			dispose = [
     				listen_dev(window_1, "popstate", /*handleBackNavigation*/ ctx[2], false, false, false),
@@ -2035,9 +2035,11 @@ var app = (function () {
     	};
 
     	const syncLogOut = evt => {
+    		console.log(evt);
+
     		if (evt.key === "logout") {
     			console.log("logged out from storage!");
-    			window.history.pushState({ path: "/home" }, "", window.location.origin + "/home");
+    			window.history.pushState({ path: "/" }, "", window.location.origin + "/");
     		}
     	};
 

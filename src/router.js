@@ -7,7 +7,7 @@ const router = {
     view: Login,
     title: 'Login'
   },
-  '/messages': {
+  '/threads': {
     view: Threads,
     title: 'Threads'
   },

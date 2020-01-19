@@ -15,9 +15,6 @@
   h1 {
     margin: 0;
     order: 2;
-    font-weight: normal;
-    letter-spacing: -0.4px;
-    font-family: "Raleway", sans-serif;
   }
 
   button {

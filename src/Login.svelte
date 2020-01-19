@@ -29,12 +29,12 @@
         } else {
           user.set(result.user);
           isLoggedIn.set(true);
-          curRoute.set("/messages");
+          curRoute.set("/threads");
           token.set(result.token);
           window.history.pushState(
-            { path: "/messages" },
+            { path: "/threads" },
             "",
-            window.location.origin + "/messages"
+            window.location.origin + "/threads"
           );
         }
       })

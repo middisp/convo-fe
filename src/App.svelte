@@ -22,13 +22,10 @@
   };
 
   const syncLogOut = evt => {
+    console.log(evt);
     if (evt.key === "logout") {
       console.log("logged out from storage!");
-      window.history.pushState(
-        { path: "/home" },
-        "",
-        window.location.origin + "/home"
-      );
+      window.history.pushState({ path: "/" }, "", window.location.origin + "/");
     }
   };
 </script>
