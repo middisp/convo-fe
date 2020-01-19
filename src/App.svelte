@@ -3,6 +3,7 @@
   import router from "./router.js";
 
   import { curRoute, user, isLoggedIn, token } from "./store.js";
+  import Header from "./components/Header.svelte";
   import Navigation from "./components/Navigation.svelte";
 
   onMount(() => {
@@ -38,9 +39,10 @@
   <title>Convo - {router[$curRoute].title}</title>
 </svelte:head>
 
+<Header showNav={$isLoggedIn} />
+{#if $isLoggedIn}
+  <Navigation />
+{/if}
 <main id="pageContent">
-  {#if $isLoggedIn}
-    <Navigation />
-  {/if}
   <svelte:component this={router[$curRoute].view} />
 </main>

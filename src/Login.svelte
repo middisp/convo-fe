@@ -51,13 +51,13 @@
     <Input
       type="text"
       name="email"
-      labelText="email"
+      labelText="Email"
       bind:value={email}
       required="required" />
     <Input
       type="password"
       name="password"
-      labelText="password"
+      labelText="Password"
       bind:value={password}
       required="required" />
     <Button
