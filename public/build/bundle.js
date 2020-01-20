@@ -1699,19 +1699,39 @@ var app = (function () {
 
     const file$6 = "src\\components\\Header.svelte";
 
-    // (82:2) {#if showNav}
+    // (96:2) {#if showNav}
     function create_if_block$2(ctx) {
     	let button;
+    	let div0;
+    	let t0;
+    	let div1;
+    	let t1;
+    	let div2;
 
     	const block = {
     		c: function create() {
     			button = element("button");
-    			button.textContent = "Menu";
-    			attr_dev(button, "class", "svelte-19yig74");
-    			add_location(button, file$6, 82, 4, 1464);
+    			div0 = element("div");
+    			t0 = space();
+    			div1 = element("div");
+    			t1 = space();
+    			div2 = element("div");
+    			attr_dev(div0, "class", "bar svelte-1od6jrg");
+    			add_location(div0, file$6, 97, 6, 1767);
+    			attr_dev(div1, "class", "bar svelte-1od6jrg");
+    			add_location(div1, file$6, 98, 6, 1794);
+    			attr_dev(div2, "class", "bar svelte-1od6jrg");
+    			add_location(div2, file$6, 99, 6, 1821);
+    			attr_dev(button, "class", "svelte-1od6jrg");
+    			add_location(button, file$6, 96, 4, 1751);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, button, anchor);
+    			append_dev(button, div0);
+    			append_dev(button, t0);
+    			append_dev(button, div1);
+    			append_dev(button, t1);
+    			append_dev(button, div2);
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(button);
@@ -1722,7 +1742,7 @@ var app = (function () {
     		block,
     		id: create_if_block$2.name,
     		type: "if",
-    		source: "(82:2) {#if showNav}",
+    		source: "(96:2) {#if showNav}",
     		ctx
     	});
 
@@ -1755,18 +1775,18 @@ var app = (function () {
     			span2 = element("span");
     			t3 = space();
     			if (if_block) if_block.c();
-    			attr_dev(span0, "class", "dot dot-one svelte-19yig74");
-    			add_location(span0, file$6, 76, 6, 1317);
-    			attr_dev(span1, "class", "dot dot-two svelte-19yig74");
-    			add_location(span1, file$6, 77, 6, 1353);
-    			attr_dev(span2, "class", "dot dot-three svelte-19yig74");
-    			add_location(span2, file$6, 78, 6, 1389);
-    			attr_dev(span3, "class", "dotAnim svelte-19yig74");
-    			add_location(span3, file$6, 75, 4, 1287);
-    			attr_dev(h1, "class", "svelte-19yig74");
-    			add_location(h1, file$6, 73, 2, 1266);
-    			attr_dev(header, "class", "svelte-19yig74");
-    			add_location(header, file$6, 72, 0, 1254);
+    			attr_dev(span0, "class", "dot dot-one svelte-1od6jrg");
+    			add_location(span0, file$6, 90, 6, 1604);
+    			attr_dev(span1, "class", "dot dot-two svelte-1od6jrg");
+    			add_location(span1, file$6, 91, 6, 1640);
+    			attr_dev(span2, "class", "dot dot-three svelte-1od6jrg");
+    			add_location(span2, file$6, 92, 6, 1676);
+    			attr_dev(span3, "class", "dotAnim svelte-1od6jrg");
+    			add_location(span3, file$6, 89, 4, 1574);
+    			attr_dev(h1, "class", "svelte-1od6jrg");
+    			add_location(h1, file$6, 87, 2, 1553);
+    			attr_dev(header, "class", "svelte-1od6jrg");
+    			add_location(header, file$6, 86, 0, 1541);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
