@@ -1,5 +1,5 @@
-import Login from './Login.svelte';
-import Threads from './Threads.svelte';
+import Login from './Views/Login.svelte';
+import Threads from './Views/Threads.svelte';
 import About from './About.svelte';
 
 const router = {
@@ -7,7 +7,7 @@ const router = {
     view: Login,
     title: 'Login'
   },
-  '/messages': {
+  '/threads': {
     view: Threads,
     title: 'Threads'
   },

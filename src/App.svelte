@@ -3,6 +3,7 @@
   import router from "./router.js";
 
   import { curRoute, user, isLoggedIn, token } from "./store.js";
+  import Header from "./components/Header.svelte";
   import Navigation from "./components/Navigation.svelte";
 
   onMount(() => {
@@ -23,11 +24,8 @@
   const syncLogOut = evt => {
     if (evt.key === "logout") {
       console.log("logged out from storage!");
-      window.history.pushState(
-        { path: "/home" },
-        "",
-        window.location.origin + "/home"
-      );
+      curRoute.set("/");
+      window.history.pushState({ path: "/" }, "", window.location.origin + "/");
     }
   };
 </script>
@@ -38,9 +36,10 @@
   <title>Convo - {router[$curRoute].title}</title>
 </svelte:head>
 
+<Header showNav={$isLoggedIn} />
+{#if $isLoggedIn}
+  <Navigation />
+{/if}
 <main id="pageContent">
-  {#if $isLoggedIn}
-    <Navigation />
-  {/if}
   <svelte:component this={router[$curRoute].view} />
 </main>
