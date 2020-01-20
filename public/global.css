@@ -3,10 +3,23 @@
 :root{
 	--primary: #032a49;
 	--secondary: #41ccbe;
-	--bodyColor: #333537;
+	--bodyTextColor: #333537;
+	--borderColor: #8c98a4;
+	--bodyBGColor: #f2f6fc;
+	--success: #bbeebc;
+	--successDark: #446945;
+	--error: #ecb7b7;
+	--errorDark: #794444;
+	--fontSize: 1.6rem
 }
 
+@media (prefers-color-scheme: dark) {}
+
 *, *:before, *:after {box-sizing: border-box}
+
+html {
+	font-size: 62.5%;
+}
 
 html, body {
 	position: relative;
@@ -16,10 +29,12 @@ html, body {
 
 body {
 	font-family: 'Nunito', sans-serif;
+	font-size: var(--fontSize);
   padding: 0 0 2em;
   margin: 0;
-  color: var(--bodyColor);
-  background-color: #efefef;
+  color: var(--bodyTextColor);
+	background-color: var(--bodyBGColor);
+	letter-spacing: 0.2px;
 }
 
 main {
@@ -32,3 +47,12 @@ h1, h2, h3 {
 	letter-spacing: -0.4px;
 	font-family: "Raleway", sans-serif;
 }
+
+form {
+	padding: 1em;
+	border: solid 1px var(--borderColor);
+	background-color: #fff;
+	border-radius: 10px;
+}
+
+form input + button {margin-top: 1.5em}

@@ -1,7 +1,7 @@
 <script>
   import { onMount } from "svelte";
 
-  import { user, token } from "./store.js";
+  import { user, token } from "../store.js";
 
   let threads = [];
 

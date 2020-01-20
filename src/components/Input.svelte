@@ -19,6 +19,16 @@
 
 <style>
   input {
+    background-color: var(--bodyBGColor);
+    border: solid 1px var(--borderColor);
+    border-radius: 10px;
+    display: block;
+    font-size: inherit;
+    padding: 0.5em;
+    width: 100%;
+  }
+
+  label {
     display: block;
   }
 
@@ -28,6 +38,13 @@
 
   label.error {
     color: red;
+  }
+
+  label + input {
+    margin-top: 0.5em;
+  }
+  input + label {
+    margin-top: 0.6em;
   }
 </style>
 

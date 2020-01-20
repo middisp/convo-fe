@@ -1,8 +1,8 @@
 <script>
-  import { curRoute, user, isLoggedIn, token } from "./store.js";
+  import { curRoute, user, isLoggedIn, token } from "../store.js";
 
-  import Input from "./components/Input.svelte";
-  import Button from "./components/Button.svelte";
+  import Input from "../components/Input.svelte";
+  import Button from "../components/Button.svelte";
 
   let email = "";
   let password = "";
@@ -64,6 +64,7 @@
       type="submit"
       on:click={login}
       disabled={!email.length || !password.length}
+      klass="primary"
       text="Login" />
   </form>
 </main>

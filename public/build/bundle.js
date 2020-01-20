@@ -475,16 +475,16 @@ var app = (function () {
     			t0 = text(/*labelText*/ ctx[3]);
     			t1 = space();
     			input = element("input");
-    			attr_dev(label, "class", label_class_value = "" + (null_to_empty(/*error*/ ctx[1] ? "error" : "") + " svelte-13faeoe"));
+    			attr_dev(label, "class", label_class_value = "" + (null_to_empty(/*error*/ ctx[1] ? "error" : "") + " svelte-1pft9y7"));
     			attr_dev(label, "for", /*name*/ ctx[2]);
-    			add_location(label, file, 33, 0, 551);
-    			attr_dev(input, "class", input_class_value = "" + (null_to_empty(/*error*/ ctx[1] ? "error" : "") + " svelte-13faeoe"));
+    			add_location(label, file, 50, 0, 864);
+    			attr_dev(input, "class", input_class_value = "" + (null_to_empty(/*error*/ ctx[1] ? "error" : "") + " svelte-1pft9y7"));
     			attr_dev(input, "name", /*name*/ ctx[2]);
     			input.value = /*value*/ ctx[0];
     			attr_dev(input, "id", /*name*/ ctx[2]);
     			attr_dev(input, "type", /*type*/ ctx[4]);
     			input.required = /*required*/ ctx[5];
-    			add_location(input, file, 34, 0, 619);
+    			add_location(input, file, 51, 0, 932);
 
     			dispose = [
     				listen_dev(input, "input", /*handleInput*/ ctx[6], false, false, false),
@@ -503,7 +503,7 @@ var app = (function () {
     		p: function update(ctx, [dirty]) {
     			if (dirty & /*labelText*/ 8) set_data_dev(t0, /*labelText*/ ctx[3]);
 
-    			if (dirty & /*error*/ 2 && label_class_value !== (label_class_value = "" + (null_to_empty(/*error*/ ctx[1] ? "error" : "") + " svelte-13faeoe"))) {
+    			if (dirty & /*error*/ 2 && label_class_value !== (label_class_value = "" + (null_to_empty(/*error*/ ctx[1] ? "error" : "") + " svelte-1pft9y7"))) {
     				attr_dev(label, "class", label_class_value);
     			}
 
@@ -511,7 +511,7 @@ var app = (function () {
     				attr_dev(label, "for", /*name*/ ctx[2]);
     			}
 
-    			if (dirty & /*error*/ 2 && input_class_value !== (input_class_value = "" + (null_to_empty(/*error*/ ctx[1] ? "error" : "") + " svelte-13faeoe"))) {
+    			if (dirty & /*error*/ 2 && input_class_value !== (input_class_value = "" + (null_to_empty(/*error*/ ctx[1] ? "error" : "") + " svelte-1pft9y7"))) {
     				attr_dev(input, "class", input_class_value);
     			}
 
@@ -707,6 +707,7 @@ var app = (function () {
     function create_fragment$1(ctx) {
     	let button;
     	let t;
+    	let button_class_value;
     	let dispose;
 
     	const block = {
@@ -714,9 +715,10 @@ var app = (function () {
     			button = element("button");
     			t = text(/*text*/ ctx[2]);
     			attr_dev(button, "type", /*type*/ ctx[1]);
+    			attr_dev(button, "class", button_class_value = "" + (null_to_empty(/*klass*/ ctx[3]) + " svelte-jqwqf8"));
     			button.disabled = /*disabled*/ ctx[0];
-    			add_location(button, file$1, 14, 0, 265);
-    			dispose = listen_dev(button, "click", prevent_default(/*handleClick*/ ctx[3]), false, true, false);
+    			add_location(button, file$1, 35, 0, 640);
+    			dispose = listen_dev(button, "click", prevent_default(/*handleClick*/ ctx[4]), false, true, false);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -730,6 +732,10 @@ var app = (function () {
 
     			if (dirty & /*type*/ 2) {
     				attr_dev(button, "type", /*type*/ ctx[1]);
+    			}
+
+    			if (dirty & /*klass*/ 8 && button_class_value !== (button_class_value = "" + (null_to_empty(/*klass*/ ctx[3]) + " svelte-jqwqf8"))) {
+    				attr_dev(button, "class", button_class_value);
     			}
 
     			if (dirty & /*disabled*/ 1) {
@@ -760,12 +766,13 @@ var app = (function () {
     	let { disabled = "false" } = $$props;
     	let { type } = $$props;
     	let { text } = $$props;
+    	let { klass } = $$props;
 
     	let { handleClick = () => {
     		dispatch("click");
     	} } = $$props;
 
-    	const writable_props = ["disabled", "type", "text", "handleClick"];
+    	const writable_props = ["disabled", "type", "text", "klass", "handleClick"];
 
     	Object.keys($$props).forEach(key => {
     		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<Button> was created with unknown prop '${key}'`);
@@ -775,21 +782,23 @@ var app = (function () {
     		if ("disabled" in $$props) $$invalidate(0, disabled = $$props.disabled);
     		if ("type" in $$props) $$invalidate(1, type = $$props.type);
     		if ("text" in $$props) $$invalidate(2, text = $$props.text);
-    		if ("handleClick" in $$props) $$invalidate(3, handleClick = $$props.handleClick);
+    		if ("klass" in $$props) $$invalidate(3, klass = $$props.klass);
+    		if ("handleClick" in $$props) $$invalidate(4, handleClick = $$props.handleClick);
     	};
 
     	$$self.$capture_state = () => {
-    		return { disabled, type, text, handleClick };
+    		return { disabled, type, text, klass, handleClick };
     	};
 
     	$$self.$inject_state = $$props => {
     		if ("disabled" in $$props) $$invalidate(0, disabled = $$props.disabled);
     		if ("type" in $$props) $$invalidate(1, type = $$props.type);
     		if ("text" in $$props) $$invalidate(2, text = $$props.text);
-    		if ("handleClick" in $$props) $$invalidate(3, handleClick = $$props.handleClick);
+    		if ("klass" in $$props) $$invalidate(3, klass = $$props.klass);
+    		if ("handleClick" in $$props) $$invalidate(4, handleClick = $$props.handleClick);
     	};
 
-    	return [disabled, type, text, handleClick];
+    	return [disabled, type, text, klass, handleClick];
     }
 
     class Button extends SvelteComponentDev {
@@ -800,7 +809,8 @@ var app = (function () {
     			disabled: 0,
     			type: 1,
     			text: 2,
-    			handleClick: 3
+    			klass: 3,
+    			handleClick: 4
     		});
 
     		dispatch_dev("SvelteRegisterComponent", {
@@ -819,6 +829,10 @@ var app = (function () {
 
     		if (/*text*/ ctx[2] === undefined && !("text" in props)) {
     			console.warn("<Button> was created without expected prop 'text'");
+    		}
+
+    		if (/*klass*/ ctx[3] === undefined && !("klass" in props)) {
+    			console.warn("<Button> was created without expected prop 'klass'");
     		}
     	}
 
@@ -846,6 +860,14 @@ var app = (function () {
     		throw new Error("<Button>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
     	}
 
+    	get klass() {
+    		throw new Error("<Button>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set klass(value) {
+    		throw new Error("<Button>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
     	get handleClick() {
     		throw new Error("<Button>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
     	}
@@ -855,8 +877,8 @@ var app = (function () {
     	}
     }
 
-    /* src\Login.svelte generated by Svelte v3.16.7 */
-    const file$2 = "src\\Login.svelte";
+    /* src\Views\Login.svelte generated by Svelte v3.16.7 */
+    const file$2 = "src\\Views\\Login.svelte";
 
     // (47:2) {#if error}
     function create_if_block(ctx) {
@@ -868,7 +890,7 @@ var app = (function () {
     		c: function create() {
     			div = element("div");
     			t = text(t_value);
-    			add_location(div, file$2, 47, 4, 1216);
+    			add_location(div, file$2, 47, 4, 1219);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -946,6 +968,7 @@ var app = (function () {
     			props: {
     				type: "submit",
     				disabled: !/*email*/ ctx[0].length || !/*password*/ ctx[1].length,
+    				klass: "primary",
     				text: "Login"
     			},
     			$$inline: true
@@ -967,10 +990,10 @@ var app = (function () {
     			create_component(input1.$$.fragment);
     			t4 = space();
     			create_component(button.$$.fragment);
-    			add_location(h1, file$2, 45, 2, 1183);
+    			add_location(h1, file$2, 45, 2, 1186);
     			attr_dev(form, "action", "post");
-    			add_location(form, file$2, 49, 2, 1264);
-    			add_location(main, file$2, 44, 0, 1173);
+    			add_location(form, file$2, 49, 2, 1267);
+    			add_location(main, file$2, 44, 0, 1176);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1136,8 +1159,8 @@ var app = (function () {
     	}
     }
 
-    /* src\Threads.svelte generated by Svelte v3.16.7 */
-    const file$3 = "src\\Threads.svelte";
+    /* src\Views\Threads.svelte generated by Svelte v3.16.7 */
+    const file$3 = "src\\Views\\Threads.svelte";
 
     function get_each_context(ctx, list, i) {
     	const child_ctx = ctx.slice();
@@ -1153,7 +1176,7 @@ var app = (function () {
     		c: function create() {
     			p = element("p");
     			p.textContent = "No threads";
-    			add_location(p, file$3, 35, 2, 741);
+    			add_location(p, file$3, 35, 2, 742);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, p, anchor);
@@ -1253,7 +1276,7 @@ var app = (function () {
     			p = element("p");
     			t0 = text("Thread - ");
     			t1 = text(t1_value);
-    			add_location(p, file$3, 32, 4, 689);
+    			add_location(p, file$3, 32, 4, 690);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, p, anchor);
@@ -1299,7 +1322,7 @@ var app = (function () {
     			t1 = space();
     			if_block.c();
     			if_block_anchor = empty();
-    			add_location(h1, file$3, 28, 0, 614);
+    			add_location(h1, file$3, 28, 0, 615);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1469,7 +1492,7 @@ var app = (function () {
 
     const file$5 = "src\\components\\Header.svelte";
 
-    // (33:2) {#if showNav}
+    // (82:2) {#if showNav}
     function create_if_block$2(ctx) {
     	let button;
 
@@ -1477,8 +1500,8 @@ var app = (function () {
     		c: function create() {
     			button = element("button");
     			button.textContent = "Menu";
-    			attr_dev(button, "class", "svelte-1yj33f8");
-    			add_location(button, file$5, 33, 4, 521);
+    			attr_dev(button, "class", "svelte-1lbju0t");
+    			add_location(button, file$5, 82, 4, 1463);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, button, anchor);
@@ -1492,7 +1515,7 @@ var app = (function () {
     		block,
     		id: create_if_block$2.name,
     		type: "if",
-    		source: "(33:2) {#if showNav}",
+    		source: "(82:2) {#if showNav}",
     		ctx
     	});
 
@@ -1503,8 +1526,13 @@ var app = (function () {
     	let header;
     	let h1;
     	let t0;
-    	let span;
+    	let span3;
+    	let span0;
+    	let t1;
+    	let span1;
     	let t2;
+    	let span2;
+    	let t3;
     	let if_block = /*showNav*/ ctx[0] && create_if_block$2(ctx);
 
     	const block = {
@@ -1512,16 +1540,26 @@ var app = (function () {
     			header = element("header");
     			h1 = element("h1");
     			t0 = text("Convo\r\n    ");
-    			span = element("span");
-    			span.textContent = ".";
+    			span3 = element("span");
+    			span0 = element("span");
+    			t1 = space();
+    			span1 = element("span");
     			t2 = space();
+    			span2 = element("span");
+    			t3 = space();
     			if (if_block) if_block.c();
-    			attr_dev(span, "class", "dotAnim");
-    			add_location(span, file$5, 30, 4, 459);
-    			attr_dev(h1, "class", "svelte-1yj33f8");
-    			add_location(h1, file$5, 28, 2, 438);
-    			attr_dev(header, "class", "svelte-1yj33f8");
-    			add_location(header, file$5, 27, 0, 426);
+    			attr_dev(span0, "class", "dot dot-one svelte-1lbju0t");
+    			add_location(span0, file$5, 76, 6, 1316);
+    			attr_dev(span1, "class", "dot dot-two svelte-1lbju0t");
+    			add_location(span1, file$5, 77, 6, 1352);
+    			attr_dev(span2, "class", "dot dot-three svelte-1lbju0t");
+    			add_location(span2, file$5, 78, 6, 1388);
+    			attr_dev(span3, "class", "dotAnim svelte-1lbju0t");
+    			add_location(span3, file$5, 75, 4, 1286);
+    			attr_dev(h1, "class", "svelte-1lbju0t");
+    			add_location(h1, file$5, 73, 2, 1265);
+    			attr_dev(header, "class", "svelte-1lbju0t");
+    			add_location(header, file$5, 72, 0, 1253);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1530,8 +1568,13 @@ var app = (function () {
     			insert_dev(target, header, anchor);
     			append_dev(header, h1);
     			append_dev(h1, t0);
-    			append_dev(h1, span);
-    			append_dev(header, t2);
+    			append_dev(h1, span3);
+    			append_dev(span3, span0);
+    			append_dev(span3, t1);
+    			append_dev(span3, span1);
+    			append_dev(span3, t2);
+    			append_dev(span3, span2);
+    			append_dev(header, t3);
     			if (if_block) if_block.m(header, null);
     		},
     		p: function update(ctx, [dirty]) {
@@ -1830,7 +1873,7 @@ var app = (function () {
     const { window: window_1 } = globals;
     const file$8 = "src\\App.svelte";
 
-    // (40:0) {#if $isLoggedIn}
+    // (39:0) {#if $isLoggedIn}
     function create_if_block$3(ctx) {
     	let current;
     	const navigation = new Navigation({ $$inline: true });
@@ -1861,7 +1904,7 @@ var app = (function () {
     		block,
     		id: create_if_block$3.name,
     		type: "if",
-    		source: "(40:0) {#if $isLoggedIn}",
+    		source: "(39:0) {#if $isLoggedIn}",
     		ctx
     	});
 
@@ -1904,7 +1947,7 @@ var app = (function () {
     			main = element("main");
     			if (switch_instance) create_component(switch_instance.$$.fragment);
     			attr_dev(main, "id", "pageContent");
-    			add_location(main, file$8, 42, 0, 1082);
+    			add_location(main, file$8, 41, 0, 1059);
 
     			dispose = [
     				listen_dev(window_1, "popstate", /*handleBackNavigation*/ ctx[2], false, false, false),
@@ -2035,8 +2078,6 @@ var app = (function () {
     	};
 
     	const syncLogOut = evt => {
-    		console.log(evt);
-
     		if (evt.key === "logout") {
     			console.log("logged out from storage!");
     			window.history.pushState({ path: "/" }, "", window.location.origin + "/");
