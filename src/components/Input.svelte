@@ -26,6 +26,11 @@
     font-size: inherit;
     padding: 0.5em;
     width: 100%;
+    box-shadow: none;
+  }
+
+  input:focus {
+    outline: 0;
   }
 
   label {
@@ -33,11 +38,11 @@
   }
 
   .error {
-    border-color: red;
+    border-color: var(--errorDark);
   }
 
   label.error {
-    color: red;
+    color: var(--errorDark);
   }
 
   label + input {
@@ -48,7 +53,9 @@
   }
 </style>
 
-<label class={error ? 'error' : ''} for={name}>{labelText}</label>
+<label class={error ? 'error' : ''} for={name}>
+  {labelText}{required ? '*' : ''}
+</label>
 <input
   class={error ? 'error' : ''}
   {name}

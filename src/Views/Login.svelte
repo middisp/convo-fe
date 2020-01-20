@@ -3,6 +3,7 @@
 
   import Input from "../components/Input.svelte";
   import Button from "../components/Button.svelte";
+  import UserMessage from "../components/UserMessage.svelte";
 
   let email = "";
   let password = "";
@@ -38,33 +39,34 @@
           );
         }
       })
-      .catch(e => console.log(e));
+      .catch(e => {
+        error = e;
+        console.log(e);
+      });
   };
 </script>
 
-<main>
-  <h1>Hi!</h1>
-  {#if error}
-    <div>{error.message || error}</div>
-  {/if}
-  <form action="post">
-    <Input
-      type="text"
-      name="email"
-      labelText="Email"
-      bind:value={email}
-      required="required" />
-    <Input
-      type="password"
-      name="password"
-      labelText="Password"
-      bind:value={password}
-      required="required" />
-    <Button
-      type="submit"
-      on:click={login}
-      disabled={!email.length || !password.length}
-      klass="primary"
-      text="Login" />
-  </form>
-</main>
+{#if error}
+  <UserMessage klass="error" {error}>{error.message || error}</UserMessage>
+{/if}
+<h1>Hi!</h1>
+<form action="post">
+  <Input
+    type="text"
+    name="email"
+    labelText="Email"
+    bind:value={email}
+    required="required" />
+  <Input
+    type="password"
+    name="password"
+    labelText="Password"
+    bind:value={password}
+    required="required" />
+  <Button
+    type="submit"
+    on:click={login}
+    disabled={!email.length || !password.length}
+    klass="primary"
+    text="Login" />
+</form>

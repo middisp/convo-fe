@@ -63,10 +63,10 @@
     animation: bounce 0.5s ease-in 0s alternate-reverse infinite;
   }
   .dot-two {
-    animation: bounce 0.5s ease-in 0.25s alternate-reverse infinite;
+    animation: bounce 0.5s ease-in 0.15s alternate-reverse infinite;
   }
   .dot-three {
-    animation: bounce 0.5s ease-in 0.5s alternate-reverse infinite;
+    animation: bounce 0.5s ease-in 0.25s alternate-reverse infinite;
   }
 </style>
 

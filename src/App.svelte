@@ -24,6 +24,7 @@
   const syncLogOut = evt => {
     if (evt.key === "logout") {
       console.log("logged out from storage!");
+      curRoute.set("/");
       window.history.pushState({ path: "/" }, "", window.location.origin + "/");
     }
   };
