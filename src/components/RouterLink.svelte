@@ -16,4 +16,11 @@
   };
 </script>
 
+<style>
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+</style>
+
 <a href={page.path} on:click|preventDefault={navigateTo}>{page.name}</a>

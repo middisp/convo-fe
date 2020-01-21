@@ -6,6 +6,8 @@
   import Header from "./components/Header.svelte";
   import Navigation from "./components/Navigation.svelte";
 
+  let toggleNav = false;
+
   onMount(() => {
     curRoute.set(window.location.pathname);
     if (!history.state) {
@@ -36,9 +38,9 @@
   <title>Convo - {router[$curRoute].title}</title>
 </svelte:head>
 
-<Header showNav={$isLoggedIn} />
+<Header showNav={$isLoggedIn} bind:toggleNav />
 {#if $isLoggedIn}
-  <Navigation />
+  <Navigation bind:toggleNav />
 {/if}
 <main id="pageContent">
   <svelte:component this={router[$curRoute].view} />

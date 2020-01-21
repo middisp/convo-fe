@@ -24,7 +24,6 @@
     })
       .then(res => res.json())
       .then(result => {
-        console.log(result);
         if (result.statusCode) {
           error = result;
         } else {
