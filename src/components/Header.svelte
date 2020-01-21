@@ -1,5 +1,10 @@
 <script>
   export let showNav = false;
+  export let toggleNav;
+
+  const handleClick = () => {
+    toggleNav = !toggleNav;
+  };
 </script>
 
 <style>
@@ -37,7 +42,25 @@
     border: 0;
     background-color: transparent;
     color: inherit;
+    display: flex;
+    flex-direction: column;
+    height: 35px;
+    justify-content: space-between;
+    margin-right: 0.5em;
     order: 1;
+    padding: 0.5em 0;
+    width: 30px;
+  }
+
+  button:focus {
+    outline: none;
+  }
+
+  .bar {
+    display: block;
+    width: 100%;
+    height: 3px;
+    background-color: var(--secondary);
   }
 
   .dotAnim {
@@ -80,6 +103,10 @@
     </span>
   </h1>
   {#if showNav}
-    <button>Menu</button>
+    <button on:click={handleClick}>
+      <div class="bar" />
+      <div class="bar" />
+      <div class="bar" />
+    </button>
   {/if}
 </header>
