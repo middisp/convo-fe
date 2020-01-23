@@ -1,6 +1,6 @@
 import Login from './Views/Login.svelte';
 import Threads from './Views/Threads.svelte';
-import About from './About.svelte';
+import Profile from './Views/Profile.svelte';
 
 const router = {
   '/': {
@@ -11,9 +11,9 @@ const router = {
     view: Threads,
     title: 'Threads'
   },
-  '/about': {
-    view: About,
-    title: 'About'
+  '/profile': {
+    view: Profile,
+    title: 'Profile'
   }
 }
 

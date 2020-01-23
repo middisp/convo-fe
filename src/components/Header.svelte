@@ -46,14 +46,17 @@
     flex-direction: column;
     height: 35px;
     justify-content: space-between;
-    margin-right: 0.5em;
+    margin-right: 1em;
     order: 1;
     padding: 0.5em 0;
     width: 30px;
   }
 
-  button:focus {
+  button:focus,
+  button::-moz-focus-inner,
+  button:active {
     outline: none;
+    border: 0;
   }
 
   .bar {
@@ -61,6 +64,22 @@
     width: 100%;
     height: 3px;
     background-color: var(--secondary);
+    opacity: 1;
+    transition: all 0.25s linear;
+  }
+
+  button.open .bar-one {
+    transform-origin: right center;
+    transform: rotate(-41deg);
+  }
+
+  button.open .bar-two {
+    opacity: 0;
+  }
+
+  button.open .bar-three {
+    transform-origin: right center;
+    transform: rotate(41deg);
   }
 
   .dotAnim {
@@ -103,10 +122,10 @@
     </span>
   </h1>
   {#if showNav}
-    <button on:click={handleClick}>
-      <div class="bar" />
-      <div class="bar" />
-      <div class="bar" />
+    <button class={toggleNav ? 'open' : ''} on:click={handleClick}>
+      <div class="bar bar-one" />
+      <div class="bar bar-two" />
+      <div class="bar bar-three" />
     </button>
   {/if}
 </header>
