@@ -42,7 +42,6 @@ main {
   max-width: 95%;
 	margin: 0 auto;
 	position: relative;
-	height: calc(100vh - 80px);
 }
 
 h1, h2, h3 {
@@ -59,3 +58,10 @@ form {
 }
 
 form input + button {margin-top: 1.5em}
+
+button:focus,
+button::-moz-focus-inner,
+button:active {
+	outline: none;
+	border: 0;
+}

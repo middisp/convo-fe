@@ -1,5 +1,4 @@
 <script>
-  import { createEventDispatcher } from "svelte";
 
   export let name;
   export let labelText;
@@ -7,6 +6,7 @@
   export let type = "text";
   export let error = false;
   export let required;
+  export let disabled = false;
 
   const handleInput = e => {
     value = type.match(/^(number|range)$/) ? +e.target.value : e.target.value;
@@ -64,4 +64,5 @@
   {type}
   on:input={handleInput}
   on:blur={handleBlur}
-  {required} />
+  {required}
+  {disabled} />
