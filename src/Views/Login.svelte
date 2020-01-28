@@ -7,7 +7,7 @@
 
   let email = "";
   let password = "";
-  let error;
+  let alert;
 
   const saveToSession = data => {
     window.sessionStorage.setItem("token", data);
@@ -25,7 +25,7 @@
       .then(res => res.json())
       .then(result => {
         if (result.statusCode) {
-          error = result;
+          alert = { message: result.message, type: "error" };
         } else {
           user.set(result.user);
           isLoggedIn.set(true);
@@ -39,16 +39,22 @@
         }
       })
       .catch(e => {
-        error = e;
+        alert = { message: e, type: "error" };
         console.log(e);
       });
   };
 </script>
 
-{#if error}
-  <UserMessage klass="error" {error}>{error.message || error}</UserMessage>
-{/if}
+<style>
+  h1 {
+    margin-top: 0;
+  }
+</style>
+
 <h1>Hi!</h1>
+{#if alert}
+  <UserMessage bind:alert />
+{/if}
 <form action="post">
   <Input
     type="text"

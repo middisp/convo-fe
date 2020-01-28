@@ -1,8 +1,5 @@
 <script>
-  import { fade } from "svelte/transition";
-
-  export let error;
-  export let klass;
+  export let alert;
 </script>
 
 <style>
@@ -10,7 +7,9 @@
     border-radius: 10px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
     font-weight: 600;
+    margin-bottom: 1.5em;
     padding: 0.5em;
+    position: relative;
   }
 
   button {
@@ -41,9 +40,15 @@
     border: solid 2px var(--successDark);
     color: var(--successDark);
   }
+
+  .info {
+    background-color: var(--primaryLight);
+    border: solid 2px var(--primary);
+    color: var(--primary);
+  }
 </style>
 
-<aside class={klass} transition:fade>
-  <button>&times;</button>
-  <p>{error.statusCode}: {error.message || error}</p>
+<aside class={alert.type}>
+  <button on:click={() => (alert = null)}>&times;</button>
+  <p>{alert.message}</p>
 </aside>
