@@ -3,7 +3,7 @@
 
   const dispatch = createEventDispatcher();
 
-  export let disabled = "false";
+  export let disabled = false;
   export let type;
   export let text;
   export let klass;

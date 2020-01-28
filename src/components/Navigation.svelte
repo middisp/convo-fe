@@ -53,7 +53,11 @@
 <nav class={toggleNav ? 'show' : ''}>
   <ul>
     <li>
-      <RouterLink page={{ path: '/profile', name: 'Profile' }} />
+      <RouterLink
+        on:click={() => {
+          toggleNav = !toggleNav;
+        }}
+        page={{ path: '/profile', name: 'Profile' }} />
     </li>
     <li>
       <RouterLink page={{ path: '/mates', name: 'Mates' }} />

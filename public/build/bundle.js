@@ -4,6 +4,7 @@ var app = (function () {
     'use strict';
 
     function noop() { }
+    const identity = x => x;
     function add_location(element, file, line, column, char) {
         element.__svelte_meta = {
             loc: { file, line, column, char }
@@ -38,6 +39,41 @@ var app = (function () {
     }
     function null_to_empty(value) {
         return value == null ? '' : value;
+    }
+
+    const is_client = typeof window !== 'undefined';
+    let now = is_client
+        ? () => window.performance.now()
+        : () => Date.now();
+    let raf = is_client ? cb => requestAnimationFrame(cb) : noop;
+
+    const tasks = new Set();
+    function run_tasks(now) {
+        tasks.forEach(task => {
+            if (!task.c(now)) {
+                tasks.delete(task);
+                task.f();
+            }
+        });
+        if (tasks.size !== 0)
+            raf(run_tasks);
+    }
+    /**
+     * Creates a new task that runs on each raf frame
+     * until it returns a falsy value or is aborted
+     */
+    function loop(callback) {
+        let task;
+        if (tasks.size === 0)
+            raf(run_tasks);
+        return {
+            promise: new Promise(fulfill => {
+                tasks.add(task = { c: callback, f: fulfill });
+            }),
+            abort() {
+                tasks.delete(task);
+            }
+        };
     }
 
     function append(target, node) {
@@ -91,6 +127,62 @@ var app = (function () {
         const e = document.createEvent('CustomEvent');
         e.initCustomEvent(type, false, false, detail);
         return e;
+    }
+
+    let stylesheet;
+    let active = 0;
+    let current_rules = {};
+    // https://github.com/darkskyapp/string-hash/blob/master/index.js
+    function hash(str) {
+        let hash = 5381;
+        let i = str.length;
+        while (i--)
+            hash = ((hash << 5) - hash) ^ str.charCodeAt(i);
+        return hash >>> 0;
+    }
+    function create_rule(node, a, b, duration, delay, ease, fn, uid = 0) {
+        const step = 16.666 / duration;
+        let keyframes = '{\n';
+        for (let p = 0; p <= 1; p += step) {
+            const t = a + (b - a) * ease(p);
+            keyframes += p * 100 + `%{${fn(t, 1 - t)}}\n`;
+        }
+        const rule = keyframes + `100% {${fn(b, 1 - b)}}\n}`;
+        const name = `__svelte_${hash(rule)}_${uid}`;
+        if (!current_rules[name]) {
+            if (!stylesheet) {
+                const style = element('style');
+                document.head.appendChild(style);
+                stylesheet = style.sheet;
+            }
+            current_rules[name] = true;
+            stylesheet.insertRule(`@keyframes ${name} ${rule}`, stylesheet.cssRules.length);
+        }
+        const animation = node.style.animation || '';
+        node.style.animation = `${animation ? `${animation}, ` : ``}${name} ${duration}ms linear ${delay}ms 1 both`;
+        active += 1;
+        return name;
+    }
+    function delete_rule(node, name) {
+        node.style.animation = (node.style.animation || '')
+            .split(', ')
+            .filter(name
+            ? anim => anim.indexOf(name) < 0 // remove specific animation
+            : anim => anim.indexOf('__svelte') === -1 // remove all Svelte animations
+        )
+            .join(', ');
+        if (name && !--active)
+            clear_rules();
+    }
+    function clear_rules() {
+        raf(() => {
+            if (active)
+                return;
+            let i = stylesheet.cssRules.length;
+            while (i--)
+                stylesheet.deleteRule(i);
+            current_rules = {};
+        });
     }
 
     let current_component;
@@ -178,6 +270,20 @@ var app = (function () {
             $$.after_update.forEach(add_render_callback);
         }
     }
+
+    let promise;
+    function wait() {
+        if (!promise) {
+            promise = Promise.resolve();
+            promise.then(() => {
+                promise = null;
+            });
+        }
+        return promise;
+    }
+    function dispatch(node, direction, kind) {
+        node.dispatchEvent(custom_event(`${direction ? 'intro' : 'outro'}${kind}`));
+    }
     const outroing = new Set();
     let outros;
     function group_outros() {
@@ -214,6 +320,112 @@ var app = (function () {
             });
             block.o(local);
         }
+    }
+    const null_transition = { duration: 0 };
+    function create_bidirectional_transition(node, fn, params, intro) {
+        let config = fn(node, params);
+        let t = intro ? 0 : 1;
+        let running_program = null;
+        let pending_program = null;
+        let animation_name = null;
+        function clear_animation() {
+            if (animation_name)
+                delete_rule(node, animation_name);
+        }
+        function init(program, duration) {
+            const d = program.b - t;
+            duration *= Math.abs(d);
+            return {
+                a: t,
+                b: program.b,
+                d,
+                duration,
+                start: program.start,
+                end: program.start + duration,
+                group: program.group
+            };
+        }
+        function go(b) {
+            const { delay = 0, duration = 300, easing = identity, tick = noop, css } = config || null_transition;
+            const program = {
+                start: now() + delay,
+                b
+            };
+            if (!b) {
+                // @ts-ignore todo: improve typings
+                program.group = outros;
+                outros.r += 1;
+            }
+            if (running_program) {
+                pending_program = program;
+            }
+            else {
+                // if this is an intro, and there's a delay, we need to do
+                // an initial tick and/or apply CSS animation immediately
+                if (css) {
+                    clear_animation();
+                    animation_name = create_rule(node, t, b, duration, delay, easing, css);
+                }
+                if (b)
+                    tick(0, 1);
+                running_program = init(program, duration);
+                add_render_callback(() => dispatch(node, b, 'start'));
+                loop(now => {
+                    if (pending_program && now > pending_program.start) {
+                        running_program = init(pending_program, duration);
+                        pending_program = null;
+                        dispatch(node, running_program.b, 'start');
+                        if (css) {
+                            clear_animation();
+                            animation_name = create_rule(node, t, running_program.b, running_program.duration, 0, easing, config.css);
+                        }
+                    }
+                    if (running_program) {
+                        if (now >= running_program.end) {
+                            tick(t = running_program.b, 1 - t);
+                            dispatch(node, running_program.b, 'end');
+                            if (!pending_program) {
+                                // we're done
+                                if (running_program.b) {
+                                    // intro — we can tidy up immediately
+                                    clear_animation();
+                                }
+                                else {
+                                    // outro — needs to be coordinated
+                                    if (!--running_program.group.r)
+                                        run_all(running_program.group.c);
+                                }
+                            }
+                            running_program = null;
+                        }
+                        else if (now >= running_program.start) {
+                            const p = now - running_program.start;
+                            t = running_program.a + running_program.d * easing(p / running_program.duration);
+                            tick(t, 1 - t);
+                        }
+                    }
+                    return !!(running_program || pending_program);
+                });
+            }
+        }
+        return {
+            run(b) {
+                if (is_function(config)) {
+                    wait().then(() => {
+                        // @ts-ignore
+                        config = config();
+                        go(b);
+                    });
+                }
+                else {
+                    go(b);
+                }
+            },
+            end() {
+                clear_animation();
+                running_program = pending_program = null;
+            }
+        };
     }
 
     const globals = (typeof window !== 'undefined' ? window : global);
@@ -751,7 +963,7 @@ var app = (function () {
     			attr_dev(button, "type", /*type*/ ctx[1]);
     			attr_dev(button, "class", button_class_value = "" + (null_to_empty(/*klass*/ ctx[3]) + " svelte-jqwqf8"));
     			button.disabled = /*disabled*/ ctx[0];
-    			add_location(button, file$1, 35, 0, 640);
+    			add_location(button, file$1, 35, 0, 638);
     			dispose = listen_dev(button, "click", prevent_default(/*handleClick*/ ctx[4]), false, true, false);
     		},
     		l: function claim(nodes) {
@@ -797,7 +1009,7 @@ var app = (function () {
 
     function instance$1($$self, $$props, $$invalidate) {
     	const dispatch = createEventDispatcher();
-    	let { disabled = "false" } = $$props;
+    	let { disabled = false } = $$props;
     	let { type } = $$props;
     	let { text } = $$props;
     	let { klass } = $$props;
@@ -911,8 +1123,17 @@ var app = (function () {
     	}
     }
 
-    /* src\components\UserMessage.svelte generated by Svelte v3.16.7 */
+    function fade(node, { delay = 0, duration = 400, easing = identity }) {
+        const o = +getComputedStyle(node).opacity;
+        return {
+            delay,
+            duration,
+            easing,
+            css: t => `opacity: ${t * o}`
+        };
+    }
 
+    /* src\components\UserMessage.svelte generated by Svelte v3.16.7 */
     const file$2 = "src\\components\\UserMessage.svelte";
 
     function create_fragment$2(ctx) {
@@ -926,6 +1147,8 @@ var app = (function () {
     	let t4_value = (/*error*/ ctx[0].message || /*error*/ ctx[0]) + "";
     	let t4;
     	let aside_class_value;
+    	let aside_transition;
+    	let current;
 
     	const block = {
     		c: function create() {
@@ -937,12 +1160,12 @@ var app = (function () {
     			t2 = text(t2_value);
     			t3 = text(": ");
     			t4 = text(t4_value);
-    			attr_dev(button, "class", "svelte-zzdwcp");
-    			add_location(button, file$2, 50, 2, 959);
-    			attr_dev(p, "class", "svelte-zzdwcp");
-    			add_location(p, file$2, 51, 2, 987);
-    			attr_dev(aside, "class", aside_class_value = "" + (null_to_empty(/*klass*/ ctx[1]) + " svelte-zzdwcp"));
-    			add_location(aside, file$2, 49, 0, 934);
+    			attr_dev(button, "class", "svelte-97d0yc");
+    			add_location(button, file$2, 46, 2, 857);
+    			attr_dev(p, "class", "svelte-97d0yc");
+    			add_location(p, file$2, 47, 2, 885);
+    			attr_dev(aside, "class", aside_class_value = "" + (null_to_empty(/*klass*/ ctx[1]) + " svelte-97d0yc"));
+    			add_location(aside, file$2, 45, 0, 816);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -955,19 +1178,34 @@ var app = (function () {
     			append_dev(p, t2);
     			append_dev(p, t3);
     			append_dev(p, t4);
+    			current = true;
     		},
     		p: function update(ctx, [dirty]) {
-    			if (dirty & /*error*/ 1 && t2_value !== (t2_value = /*error*/ ctx[0].statusCode + "")) set_data_dev(t2, t2_value);
-    			if (dirty & /*error*/ 1 && t4_value !== (t4_value = (/*error*/ ctx[0].message || /*error*/ ctx[0]) + "")) set_data_dev(t4, t4_value);
+    			if ((!current || dirty & /*error*/ 1) && t2_value !== (t2_value = /*error*/ ctx[0].statusCode + "")) set_data_dev(t2, t2_value);
+    			if ((!current || dirty & /*error*/ 1) && t4_value !== (t4_value = (/*error*/ ctx[0].message || /*error*/ ctx[0]) + "")) set_data_dev(t4, t4_value);
 
-    			if (dirty & /*klass*/ 2 && aside_class_value !== (aside_class_value = "" + (null_to_empty(/*klass*/ ctx[1]) + " svelte-zzdwcp"))) {
+    			if (!current || dirty & /*klass*/ 2 && aside_class_value !== (aside_class_value = "" + (null_to_empty(/*klass*/ ctx[1]) + " svelte-97d0yc"))) {
     				attr_dev(aside, "class", aside_class_value);
     			}
     		},
-    		i: noop,
-    		o: noop,
+    		i: function intro(local) {
+    			if (current) return;
+
+    			add_render_callback(() => {
+    				if (!aside_transition) aside_transition = create_bidirectional_transition(aside, fade, {}, true);
+    				aside_transition.run(1);
+    			});
+
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			if (!aside_transition) aside_transition = create_bidirectional_transition(aside, fade, {}, false);
+    			aside_transition.run(0);
+    			current = false;
+    		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(aside);
+    			if (detaching && aside_transition) aside_transition.end();
     		}
     	};
 
@@ -1673,11 +1911,11 @@ var app = (function () {
     			attr_dev(input, "name", /*name*/ ctx[1]);
     			attr_dev(input, "id", /*name*/ ctx[1]);
     			attr_dev(input, "type", "checkbox");
-    			attr_dev(input, "class", "svelte-10mg45n");
-    			add_location(input, file$5, 61, 0, 1110);
+    			attr_dev(input, "class", "svelte-1g1xjfv");
+    			add_location(input, file$5, 61, 0, 1109);
     			attr_dev(label, "for", /*name*/ ctx[1]);
-    			attr_dev(label, "class", "svelte-10mg45n");
-    			add_location(label, file$5, 62, 0, 1175);
+    			attr_dev(label, "class", "svelte-1g1xjfv");
+    			add_location(label, file$5, 62, 0, 1174);
     			dispose = listen_dev(input, "change", /*input_change_handler*/ ctx[3]);
     		},
     		l: function claim(nodes) {
@@ -1816,27 +2054,35 @@ var app = (function () {
     /* src\Views\Profile.svelte generated by Svelte v3.16.7 */
     const file$6 = "src\\Views\\Profile.svelte";
 
-    // (39:0) {#if $user}
+    // (94:0) {#if $user}
     function create_if_block$2(ctx) {
-    	let form;
+    	let t0;
+    	let form0;
     	let img;
     	let img_src_value;
     	let img_alt_value;
-    	let t0;
-    	let updating_value;
     	let t1;
+    	let updating_value;
     	let t2;
-    	let t3;
-    	let p;
-    	let t5;
     	let updating_value_1;
-    	let t6;
+    	let t3;
     	let updating_value_2;
+    	let t4;
+    	let t5;
+    	let form1;
+    	let legend;
     	let t7;
+    	let updating_value_3;
+    	let t8;
+    	let updating_value_4;
+    	let t9;
+    	let updating_value_5;
+    	let t10;
     	let current;
+    	let if_block0 = /*error*/ ctx[4] && create_if_block_2(ctx);
 
     	function toggle_value_binding(value) {
-    		/*toggle_value_binding*/ ctx[5].call(null, value);
+    		/*toggle_value_binding*/ ctx[10].call(null, value);
     	}
 
     	let toggle_props = { name: "edit", labelText: "Edit" };
@@ -1848,115 +2094,194 @@ var app = (function () {
     	const toggle = new Toggle({ props: toggle_props, $$inline: true });
     	binding_callbacks.push(() => bind(toggle, "value", toggle_value_binding));
 
-    	const input0 = new Input({
-    			props: {
-    				type: "text",
-    				name: "name",
-    				labelText: "Name",
-    				value: /*$user*/ ctx[3].name,
-    				disabled: !/*isEditable*/ ctx[0],
-    				required: false
-    			},
-    			$$inline: true
-    		});
+    	function input0_value_binding(value_1) {
+    		/*input0_value_binding*/ ctx[11].call(null, value_1);
+    	}
 
-    	const input1 = new Input({
-    			props: {
-    				type: "text",
-    				name: "email",
-    				labelText: "Email",
-    				value: /*$user*/ ctx[3].email,
-    				disabled: !/*isEditable*/ ctx[0],
-    				required: false
-    			},
-    			$$inline: true
-    		});
+    	let input0_props = {
+    		type: "text",
+    		name: "name",
+    		labelText: "Name",
+    		disabled: !/*isEditable*/ ctx[0],
+    		required: false
+    	};
 
-    	function input2_value_binding(value_1) {
-    		/*input2_value_binding*/ ctx[6].call(null, value_1);
+    	if (/*updatedUser*/ ctx[5].name !== void 0) {
+    		input0_props.value = /*updatedUser*/ ctx[5].name;
+    	}
+
+    	const input0 = new Input({ props: input0_props, $$inline: true });
+    	binding_callbacks.push(() => bind(input0, "value", input0_value_binding));
+
+    	function input1_value_binding(value_2) {
+    		/*input1_value_binding*/ ctx[12].call(null, value_2);
+    	}
+
+    	let input1_props = {
+    		type: "text",
+    		name: "email",
+    		labelText: "Email",
+    		disabled: !/*isEditable*/ ctx[0],
+    		required: false
+    	};
+
+    	if (/*updatedUser*/ ctx[5].email !== void 0) {
+    		input1_props.value = /*updatedUser*/ ctx[5].email;
+    	}
+
+    	const input1 = new Input({ props: input1_props, $$inline: true });
+    	binding_callbacks.push(() => bind(input1, "value", input1_value_binding));
+    	let if_block1 = /*isEditable*/ ctx[0] && create_if_block_1(ctx);
+
+    	function input2_value_binding(value_3) {
+    		/*input2_value_binding*/ ctx[13].call(null, value_3);
     	}
 
     	let input2_props = {
     		type: "password",
     		name: "password",
-    		labelText: "Password",
-    		required: false
+    		labelText: "Current Password",
+    		required: true
     	};
 
-    	if (/*password*/ ctx[1] !== void 0) {
-    		input2_props.value = /*password*/ ctx[1];
+    	if (/*currentPassword*/ ctx[1] !== void 0) {
+    		input2_props.value = /*currentPassword*/ ctx[1];
     	}
 
     	const input2 = new Input({ props: input2_props, $$inline: true });
     	binding_callbacks.push(() => bind(input2, "value", input2_value_binding));
 
-    	function input3_value_binding(value_2) {
-    		/*input3_value_binding*/ ctx[7].call(null, value_2);
+    	function input3_value_binding(value_4) {
+    		/*input3_value_binding*/ ctx[14].call(null, value_4);
     	}
 
     	let input3_props = {
-    		type: "text",
-    		name: "c-password",
-    		labelText: "Confirm password",
-    		required: false
+    		type: "password",
+    		name: "new-password",
+    		labelText: "New Password",
+    		required: true
     	};
 
-    	if (/*confPassword*/ ctx[2] !== void 0) {
-    		input3_props.value = /*confPassword*/ ctx[2];
+    	if (/*newPassword*/ ctx[2] !== void 0) {
+    		input3_props.value = /*newPassword*/ ctx[2];
     	}
 
     	const input3 = new Input({ props: input3_props, $$inline: true });
     	binding_callbacks.push(() => bind(input3, "value", input3_value_binding));
-    	let if_block = /*isEditable*/ ctx[0] && create_if_block_1(ctx);
+
+    	function input4_value_binding(value_5) {
+    		/*input4_value_binding*/ ctx[15].call(null, value_5);
+    	}
+
+    	let input4_props = {
+    		type: "password",
+    		name: "c-password",
+    		labelText: "Confirm New Password",
+    		required: true
+    	};
+
+    	if (/*confNewPassword*/ ctx[3] !== void 0) {
+    		input4_props.value = /*confNewPassword*/ ctx[3];
+    	}
+
+    	const input4 = new Input({ props: input4_props, $$inline: true });
+    	binding_callbacks.push(() => bind(input4, "value", input4_value_binding));
+
+    	const button = new Button({
+    			props: {
+    				type: "submit",
+    				klass: "primary",
+    				text: "Save"
+    			},
+    			$$inline: true
+    		});
+
+    	button.$on("click", /*updatePassword*/ ctx[8]);
 
     	const block = {
     		c: function create() {
-    			form = element("form");
-    			img = element("img");
+    			if (if_block0) if_block0.c();
     			t0 = space();
-    			create_component(toggle.$$.fragment);
+    			form0 = element("form");
+    			img = element("img");
     			t1 = space();
-    			create_component(input0.$$.fragment);
+    			create_component(toggle.$$.fragment);
     			t2 = space();
-    			create_component(input1.$$.fragment);
+    			create_component(input0.$$.fragment);
     			t3 = space();
-    			p = element("p");
-    			p.textContent = "Update password";
+    			create_component(input1.$$.fragment);
+    			t4 = space();
+    			if (if_block1) if_block1.c();
     			t5 = space();
-    			create_component(input2.$$.fragment);
-    			t6 = space();
-    			create_component(input3.$$.fragment);
+    			form1 = element("form");
+    			legend = element("legend");
+    			legend.textContent = "Password management";
     			t7 = space();
-    			if (if_block) if_block.c();
+    			create_component(input2.$$.fragment);
+    			t8 = space();
+    			create_component(input3.$$.fragment);
+    			t9 = space();
+    			create_component(input4.$$.fragment);
+    			t10 = space();
+    			create_component(button.$$.fragment);
     			if (img.src !== (img_src_value = "/images/default-avatar.png")) attr_dev(img, "src", img_src_value);
-    			attr_dev(img, "alt", img_alt_value = /*$user*/ ctx[3].name);
-    			attr_dev(img, "class", "svelte-8o1qga");
-    			add_location(img, file$6, 40, 4, 800);
-    			add_location(p, file$6, 58, 4, 1253);
-    			attr_dev(form, "class", "svelte-8o1qga");
-    			add_location(form, file$6, 39, 2, 788);
+    			attr_dev(img, "alt", img_alt_value = /*updatedUser*/ ctx[5].name);
+    			attr_dev(img, "class", "svelte-1v6aass");
+    			add_location(img, file$6, 98, 4, 2425);
+    			attr_dev(form0, "class", "userDetails svelte-1v6aass");
+    			add_location(form0, file$6, 97, 2, 2393);
+    			add_location(legend, file$6, 122, 4, 3065);
+    			attr_dev(form1, "class", "passwordManagement svelte-1v6aass");
+    			add_location(form1, file$6, 121, 2, 3026);
     		},
     		m: function mount(target, anchor) {
-    			insert_dev(target, form, anchor);
-    			append_dev(form, img);
-    			append_dev(form, t0);
-    			mount_component(toggle, form, null);
-    			append_dev(form, t1);
-    			mount_component(input0, form, null);
-    			append_dev(form, t2);
-    			mount_component(input1, form, null);
-    			append_dev(form, t3);
-    			append_dev(form, p);
-    			append_dev(form, t5);
-    			mount_component(input2, form, null);
-    			append_dev(form, t6);
-    			mount_component(input3, form, null);
-    			append_dev(form, t7);
-    			if (if_block) if_block.m(form, null);
+    			if (if_block0) if_block0.m(target, anchor);
+    			insert_dev(target, t0, anchor);
+    			insert_dev(target, form0, anchor);
+    			append_dev(form0, img);
+    			append_dev(form0, t1);
+    			mount_component(toggle, form0, null);
+    			append_dev(form0, t2);
+    			mount_component(input0, form0, null);
+    			append_dev(form0, t3);
+    			mount_component(input1, form0, null);
+    			append_dev(form0, t4);
+    			if (if_block1) if_block1.m(form0, null);
+    			insert_dev(target, t5, anchor);
+    			insert_dev(target, form1, anchor);
+    			append_dev(form1, legend);
+    			append_dev(form1, t7);
+    			mount_component(input2, form1, null);
+    			append_dev(form1, t8);
+    			mount_component(input3, form1, null);
+    			append_dev(form1, t9);
+    			mount_component(input4, form1, null);
+    			append_dev(form1, t10);
+    			mount_component(button, form1, null);
     			current = true;
     		},
     		p: function update(ctx, dirty) {
-    			if (!current || dirty & /*$user*/ 8 && img_alt_value !== (img_alt_value = /*$user*/ ctx[3].name)) {
+    			if (/*error*/ ctx[4]) {
+    				if (if_block0) {
+    					if_block0.p(ctx, dirty);
+    					transition_in(if_block0, 1);
+    				} else {
+    					if_block0 = create_if_block_2(ctx);
+    					if_block0.c();
+    					transition_in(if_block0, 1);
+    					if_block0.m(t0.parentNode, t0);
+    				}
+    			} else if (if_block0) {
+    				group_outros();
+
+    				transition_out(if_block0, 1, 1, () => {
+    					if_block0 = null;
+    				});
+
+    				check_outros();
+    			}
+
+    			if (!current || dirty & /*updatedUser*/ 32 && img_alt_value !== (img_alt_value = /*updatedUser*/ ctx[5].name)) {
     				attr_dev(img, "alt", img_alt_value);
     			}
 
@@ -1970,79 +2295,113 @@ var app = (function () {
 
     			toggle.$set(toggle_changes);
     			const input0_changes = {};
-    			if (dirty & /*$user*/ 8) input0_changes.value = /*$user*/ ctx[3].name;
     			if (dirty & /*isEditable*/ 1) input0_changes.disabled = !/*isEditable*/ ctx[0];
+
+    			if (!updating_value_1 && dirty & /*updatedUser*/ 32) {
+    				updating_value_1 = true;
+    				input0_changes.value = /*updatedUser*/ ctx[5].name;
+    				add_flush_callback(() => updating_value_1 = false);
+    			}
+
     			input0.$set(input0_changes);
     			const input1_changes = {};
-    			if (dirty & /*$user*/ 8) input1_changes.value = /*$user*/ ctx[3].email;
     			if (dirty & /*isEditable*/ 1) input1_changes.disabled = !/*isEditable*/ ctx[0];
+
+    			if (!updating_value_2 && dirty & /*updatedUser*/ 32) {
+    				updating_value_2 = true;
+    				input1_changes.value = /*updatedUser*/ ctx[5].email;
+    				add_flush_callback(() => updating_value_2 = false);
+    			}
+
     			input1.$set(input1_changes);
+
+    			if (/*isEditable*/ ctx[0]) {
+    				if (if_block1) {
+    					if_block1.p(ctx, dirty);
+    					transition_in(if_block1, 1);
+    				} else {
+    					if_block1 = create_if_block_1(ctx);
+    					if_block1.c();
+    					transition_in(if_block1, 1);
+    					if_block1.m(form0, null);
+    				}
+    			} else if (if_block1) {
+    				group_outros();
+
+    				transition_out(if_block1, 1, 1, () => {
+    					if_block1 = null;
+    				});
+
+    				check_outros();
+    			}
+
     			const input2_changes = {};
 
-    			if (!updating_value_1 && dirty & /*password*/ 2) {
-    				updating_value_1 = true;
-    				input2_changes.value = /*password*/ ctx[1];
-    				add_flush_callback(() => updating_value_1 = false);
+    			if (!updating_value_3 && dirty & /*currentPassword*/ 2) {
+    				updating_value_3 = true;
+    				input2_changes.value = /*currentPassword*/ ctx[1];
+    				add_flush_callback(() => updating_value_3 = false);
     			}
 
     			input2.$set(input2_changes);
     			const input3_changes = {};
 
-    			if (!updating_value_2 && dirty & /*confPassword*/ 4) {
-    				updating_value_2 = true;
-    				input3_changes.value = /*confPassword*/ ctx[2];
-    				add_flush_callback(() => updating_value_2 = false);
+    			if (!updating_value_4 && dirty & /*newPassword*/ 4) {
+    				updating_value_4 = true;
+    				input3_changes.value = /*newPassword*/ ctx[2];
+    				add_flush_callback(() => updating_value_4 = false);
     			}
 
     			input3.$set(input3_changes);
+    			const input4_changes = {};
 
-    			if (/*isEditable*/ ctx[0]) {
-    				if (if_block) {
-    					if_block.p(ctx, dirty);
-    					transition_in(if_block, 1);
-    				} else {
-    					if_block = create_if_block_1(ctx);
-    					if_block.c();
-    					transition_in(if_block, 1);
-    					if_block.m(form, null);
-    				}
-    			} else if (if_block) {
-    				group_outros();
-
-    				transition_out(if_block, 1, 1, () => {
-    					if_block = null;
-    				});
-
-    				check_outros();
+    			if (!updating_value_5 && dirty & /*confNewPassword*/ 8) {
+    				updating_value_5 = true;
+    				input4_changes.value = /*confNewPassword*/ ctx[3];
+    				add_flush_callback(() => updating_value_5 = false);
     			}
+
+    			input4.$set(input4_changes);
     		},
     		i: function intro(local) {
     			if (current) return;
+    			transition_in(if_block0);
     			transition_in(toggle.$$.fragment, local);
     			transition_in(input0.$$.fragment, local);
     			transition_in(input1.$$.fragment, local);
+    			transition_in(if_block1);
     			transition_in(input2.$$.fragment, local);
     			transition_in(input3.$$.fragment, local);
-    			transition_in(if_block);
+    			transition_in(input4.$$.fragment, local);
+    			transition_in(button.$$.fragment, local);
     			current = true;
     		},
     		o: function outro(local) {
+    			transition_out(if_block0);
     			transition_out(toggle.$$.fragment, local);
     			transition_out(input0.$$.fragment, local);
     			transition_out(input1.$$.fragment, local);
+    			transition_out(if_block1);
     			transition_out(input2.$$.fragment, local);
     			transition_out(input3.$$.fragment, local);
-    			transition_out(if_block);
+    			transition_out(input4.$$.fragment, local);
+    			transition_out(button.$$.fragment, local);
     			current = false;
     		},
     		d: function destroy(detaching) {
-    			if (detaching) detach_dev(form);
+    			if (if_block0) if_block0.d(detaching);
+    			if (detaching) detach_dev(t0);
+    			if (detaching) detach_dev(form0);
     			destroy_component(toggle);
     			destroy_component(input0);
     			destroy_component(input1);
+    			if (if_block1) if_block1.d();
+    			if (detaching) detach_dev(t5);
+    			if (detaching) detach_dev(form1);
     			destroy_component(input2);
     			destroy_component(input3);
-    			if (if_block) if_block.d();
+    			destroy_component(input4);
+    			destroy_component(button);
     		}
     	};
 
@@ -2050,14 +2409,102 @@ var app = (function () {
     		block,
     		id: create_if_block$2.name,
     		type: "if",
-    		source: "(39:0) {#if $user}",
+    		source: "(94:0) {#if $user}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (73:4) {#if isEditable}
+    // (95:2) {#if error}
+    function create_if_block_2(ctx) {
+    	let current;
+
+    	const usermessage = new UserMessage({
+    			props: {
+    				klass: "error",
+    				error: /*error*/ ctx[4],
+    				$$slots: { default: [create_default_slot$1] },
+    				$$scope: { ctx }
+    			},
+    			$$inline: true
+    		});
+
+    	const block = {
+    		c: function create() {
+    			create_component(usermessage.$$.fragment);
+    		},
+    		m: function mount(target, anchor) {
+    			mount_component(usermessage, target, anchor);
+    			current = true;
+    		},
+    		p: function update(ctx, dirty) {
+    			const usermessage_changes = {};
+    			if (dirty & /*error*/ 16) usermessage_changes.error = /*error*/ ctx[4];
+
+    			if (dirty & /*$$scope, error*/ 65552) {
+    				usermessage_changes.$$scope = { dirty, ctx };
+    			}
+
+    			usermessage.$set(usermessage_changes);
+    		},
+    		i: function intro(local) {
+    			if (current) return;
+    			transition_in(usermessage.$$.fragment, local);
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			transition_out(usermessage.$$.fragment, local);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			destroy_component(usermessage, detaching);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block_2.name,
+    		type: "if",
+    		source: "(95:2) {#if error}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (96:4) <UserMessage klass="error" {error}>
+    function create_default_slot$1(ctx) {
+    	let t_value = (/*error*/ ctx[4].message || /*error*/ ctx[4]) + "";
+    	let t;
+
+    	const block = {
+    		c: function create() {
+    			t = text(t_value);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, t, anchor);
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*error*/ 16 && t_value !== (t_value = (/*error*/ ctx[4].message || /*error*/ ctx[4]) + "")) set_data_dev(t, t_value);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(t);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_default_slot$1.name,
+    		type: "slot",
+    		source: "(96:4) <UserMessage klass=\\\"error\\\" {error}>",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (117:4) {#if isEditable}
     function create_if_block_1(ctx) {
     	let current;
 
@@ -2070,7 +2517,7 @@ var app = (function () {
     			$$inline: true
     		});
 
-    	button.$on("click", /*save*/ ctx[4]);
+    	button.$on("click", /*save*/ ctx[7]);
 
     	const block = {
     		c: function create() {
@@ -2099,7 +2546,7 @@ var app = (function () {
     		block,
     		id: create_if_block_1.name,
     		type: "if",
-    		source: "(73:4) {#if isEditable}",
+    		source: "(117:4) {#if isEditable}",
     		ctx
     	});
 
@@ -2109,7 +2556,7 @@ var app = (function () {
     function create_fragment$6(ctx) {
     	let if_block_anchor;
     	let current;
-    	let if_block = /*$user*/ ctx[3] && create_if_block$2(ctx);
+    	let if_block = /*$user*/ ctx[6] && create_if_block$2(ctx);
 
     	const block = {
     		c: function create() {
@@ -2125,7 +2572,7 @@ var app = (function () {
     			current = true;
     		},
     		p: function update(ctx, [dirty]) {
-    			if (/*$user*/ ctx[3]) {
+    			if (/*$user*/ ctx[6]) {
     				if (if_block) {
     					if_block.p(ctx, dirty);
     					transition_in(if_block, 1);
@@ -2173,30 +2620,94 @@ var app = (function () {
 
     function instance$6($$self, $$props, $$invalidate) {
     	let $user;
+    	let $token;
     	validate_store(user, "user");
-    	component_subscribe($$self, user, $$value => $$invalidate(3, $user = $$value));
+    	component_subscribe($$self, user, $$value => $$invalidate(6, $user = $$value));
+    	validate_store(token, "token");
+    	component_subscribe($$self, token, $$value => $$invalidate(9, $token = $$value));
+    	let isEditable;
+    	let currentPassword = "";
+    	let newPassword = "";
+    	let confNewPassword = "";
+    	let error;
+    	let updatedUser = $user;
 
     	const save = () => {
-    		console.log("click");
+    		fetch(`http://localhost:3000/user/update/${updatedUser._id}`, {
+    			method: "put",
+    			headers: {
+    				"Content-Type": "application/json",
+    				Authorization: `bearer: ${$token}`
+    			},
+    			body: JSON.stringify(updatedUser)
+    		}).then(res => res.json()).then(result => {
+    			if (result.statusCode) {
+    				$$invalidate(4, error = result);
+    			}
+
+    			user.update(result => result);
+    		}).catch(e => {
+    			$$invalidate(4, error = e);
+    			console.log(e);
+    		});
     	};
 
-    	let isEditable;
-    	let password = "";
-    	let confPassword = "";
+    	const updatePassword = () => {
+    		if (!currentPassword || !newPassword || !confNewPassword) {
+    			return $$invalidate(4, error = "Please provide passwords");
+    		}
+
+    		if (newPassword !== confNewPassword) {
+    			return $$invalidate(4, error = "Passwords don't match");
+    		}
+
+    		fetch(`http://localhost:3000/login/updatePassword/${$user._id}`, {
+    			method: "put",
+    			headers: {
+    				"Content-Type": "application/json",
+    				Authorization: `bearer: ${$token}`
+    			},
+    			body: JSON.stringify({ currentPassword, newPassword })
+    		}).then(res => res.json()).then(result => {
+    			if (result.statusCode) {
+    				$$invalidate(4, error = result);
+    			}
+
+    			user.update(result => result);
+    		}).catch(e => {
+    			$$invalidate(4, error = e);
+    			console.log(e);
+    		});
+    	};
 
     	function toggle_value_binding(value) {
     		isEditable = value;
     		$$invalidate(0, isEditable);
     	}
 
-    	function input2_value_binding(value_1) {
-    		password = value_1;
-    		$$invalidate(1, password);
+    	function input0_value_binding(value_1) {
+    		updatedUser.name = value_1;
+    		$$invalidate(5, updatedUser);
     	}
 
-    	function input3_value_binding(value_2) {
-    		confPassword = value_2;
-    		$$invalidate(2, confPassword);
+    	function input1_value_binding(value_2) {
+    		updatedUser.email = value_2;
+    		$$invalidate(5, updatedUser);
+    	}
+
+    	function input2_value_binding(value_3) {
+    		currentPassword = value_3;
+    		$$invalidate(1, currentPassword);
+    	}
+
+    	function input3_value_binding(value_4) {
+    		newPassword = value_4;
+    		$$invalidate(2, newPassword);
+    	}
+
+    	function input4_value_binding(value_5) {
+    		confNewPassword = value_5;
+    		$$invalidate(3, confNewPassword);
     	}
 
     	$$self.$capture_state = () => {
@@ -2205,20 +2716,32 @@ var app = (function () {
 
     	$$self.$inject_state = $$props => {
     		if ("isEditable" in $$props) $$invalidate(0, isEditable = $$props.isEditable);
-    		if ("password" in $$props) $$invalidate(1, password = $$props.password);
-    		if ("confPassword" in $$props) $$invalidate(2, confPassword = $$props.confPassword);
+    		if ("currentPassword" in $$props) $$invalidate(1, currentPassword = $$props.currentPassword);
+    		if ("newPassword" in $$props) $$invalidate(2, newPassword = $$props.newPassword);
+    		if ("confNewPassword" in $$props) $$invalidate(3, confNewPassword = $$props.confNewPassword);
+    		if ("error" in $$props) $$invalidate(4, error = $$props.error);
+    		if ("updatedUser" in $$props) $$invalidate(5, updatedUser = $$props.updatedUser);
     		if ("$user" in $$props) user.set($user = $$props.$user);
+    		if ("$token" in $$props) token.set($token = $$props.$token);
     	};
 
     	return [
     		isEditable,
-    		password,
-    		confPassword,
+    		currentPassword,
+    		newPassword,
+    		confNewPassword,
+    		error,
+    		updatedUser,
     		$user,
     		save,
+    		updatePassword,
+    		$token,
     		toggle_value_binding,
+    		input0_value_binding,
+    		input1_value_binding,
     		input2_value_binding,
-    		input3_value_binding
+    		input3_value_binding,
+    		input4_value_binding
     	];
     }
 
@@ -2274,14 +2797,14 @@ var app = (function () {
     			div1 = element("div");
     			t1 = space();
     			div2 = element("div");
-    			attr_dev(div0, "class", "bar bar-one svelte-svi4ym");
-    			add_location(div0, file$7, 125, 6, 2330);
-    			attr_dev(div1, "class", "bar bar-two svelte-svi4ym");
-    			add_location(div1, file$7, 126, 6, 2365);
-    			attr_dev(div2, "class", "bar bar-three svelte-svi4ym");
-    			add_location(div2, file$7, 127, 6, 2400);
-    			attr_dev(button, "class", button_class_value = "" + (null_to_empty(/*toggleNav*/ ctx[0] ? "open" : "") + " svelte-svi4ym"));
-    			add_location(button, file$7, 124, 4, 2259);
+    			attr_dev(div0, "class", "bar bar-one svelte-15qcjnw");
+    			add_location(div0, file$7, 125, 6, 2328);
+    			attr_dev(div1, "class", "bar bar-two svelte-15qcjnw");
+    			add_location(div1, file$7, 126, 6, 2363);
+    			attr_dev(div2, "class", "bar bar-three svelte-15qcjnw");
+    			add_location(div2, file$7, 127, 6, 2398);
+    			attr_dev(button, "class", button_class_value = "" + (null_to_empty(/*toggleNav*/ ctx[0] ? "open" : "") + " svelte-15qcjnw"));
+    			add_location(button, file$7, 124, 4, 2257);
     			dispose = listen_dev(button, "click", /*handleClick*/ ctx[2], false, false, false);
     		},
     		m: function mount(target, anchor) {
@@ -2293,7 +2816,7 @@ var app = (function () {
     			append_dev(button, div2);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*toggleNav*/ 1 && button_class_value !== (button_class_value = "" + (null_to_empty(/*toggleNav*/ ctx[0] ? "open" : "") + " svelte-svi4ym"))) {
+    			if (dirty & /*toggleNav*/ 1 && button_class_value !== (button_class_value = "" + (null_to_empty(/*toggleNav*/ ctx[0] ? "open" : "") + " svelte-15qcjnw"))) {
     				attr_dev(button, "class", button_class_value);
     			}
     		},
@@ -2340,18 +2863,18 @@ var app = (function () {
     			span2 = element("span");
     			t3 = space();
     			if (if_block) if_block.c();
-    			attr_dev(span0, "class", "dot dot-one svelte-svi4ym");
-    			add_location(span0, file$7, 118, 6, 2112);
-    			attr_dev(span1, "class", "dot dot-two svelte-svi4ym");
-    			add_location(span1, file$7, 119, 6, 2148);
-    			attr_dev(span2, "class", "dot dot-three svelte-svi4ym");
-    			add_location(span2, file$7, 120, 6, 2184);
-    			attr_dev(span3, "class", "dotAnim svelte-svi4ym");
-    			add_location(span3, file$7, 117, 4, 2082);
-    			attr_dev(h1, "class", "svelte-svi4ym");
-    			add_location(h1, file$7, 115, 2, 2061);
-    			attr_dev(header, "class", "svelte-svi4ym");
-    			add_location(header, file$7, 114, 0, 2049);
+    			attr_dev(span0, "class", "dot dot-one svelte-15qcjnw");
+    			add_location(span0, file$7, 118, 6, 2110);
+    			attr_dev(span1, "class", "dot dot-two svelte-15qcjnw");
+    			add_location(span1, file$7, 119, 6, 2146);
+    			attr_dev(span2, "class", "dot dot-three svelte-15qcjnw");
+    			add_location(span2, file$7, 120, 6, 2182);
+    			attr_dev(span3, "class", "dotAnim svelte-15qcjnw");
+    			add_location(span3, file$7, 117, 4, 2080);
+    			attr_dev(h1, "class", "svelte-15qcjnw");
+    			add_location(h1, file$7, 115, 2, 2059);
+    			attr_dev(header, "class", "svelte-15qcjnw");
+    			add_location(header, file$7, 114, 0, 2047);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -2594,6 +3117,8 @@ var app = (function () {
     			$$inline: true
     		});
 
+    	routerlink0.$on("click", /*click_handler*/ ctx[1]);
+
     	const routerlink1 = new RouterLink({
     			props: { page: { path: "/mates", name: "Mates" } },
     			$$inline: true
@@ -2621,9 +3146,9 @@ var app = (function () {
     			attr_dev(li0, "class", "svelte-141vzsr");
     			add_location(li0, file$9, 54, 4, 1008);
     			attr_dev(li1, "class", "svelte-141vzsr");
-    			add_location(li1, file$9, 57, 4, 1096);
+    			add_location(li1, file$9, 61, 4, 1179);
     			attr_dev(li2, "class", "svelte-141vzsr");
-    			add_location(li2, file$9, 60, 4, 1180);
+    			add_location(li2, file$9, 64, 4, 1263);
     			attr_dev(ul, "class", "svelte-141vzsr");
     			add_location(ul, file$9, 53, 2, 998);
     			attr_dev(nav, "class", nav_class_value = "" + (null_to_empty(/*toggleNav*/ ctx[0] ? "show" : "") + " svelte-141vzsr"));
@@ -2699,6 +3224,10 @@ var app = (function () {
     		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<Navigation> was created with unknown prop '${key}'`);
     	});
 
+    	const click_handler = () => {
+    		$$invalidate(0, toggleNav = !toggleNav);
+    	};
+
     	$$self.$set = $$props => {
     		if ("toggleNav" in $$props) $$invalidate(0, toggleNav = $$props.toggleNav);
     	};
@@ -2711,7 +3240,7 @@ var app = (function () {
     		if ("toggleNav" in $$props) $$invalidate(0, toggleNav = $$props.toggleNav);
     	};
 
-    	return [toggleNav];
+    	return [toggleNav, click_handler];
     }
 
     class Navigation extends SvelteComponentDev {
