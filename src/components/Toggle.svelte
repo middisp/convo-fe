@@ -36,9 +36,9 @@
   label:before {
     background-color: var(--bodyBGColor);
     border: solid 1px var(--borderColor);
-    border-radius: 10px;
-    height: 10px;
-    width: 35px;
+    border-radius: 15px;
+    height: 30px;
+    width: 60px;
   }
 
   label:after {
@@ -48,14 +48,14 @@
     width: 25px;
     border-radius: 50%;
     position: absolute;
-    right: 22px;
+    right: 31px;
     transition: all 0.25s ease-in;
   }
 
   input:checked + label:after {
     background-color: var(--success);
     border: solid 1px var(--successDark);
-    right: -9px;
+    right: 3px;
   }
 </style>
 

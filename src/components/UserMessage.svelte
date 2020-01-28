@@ -1,4 +1,6 @@
 <script>
+  import { fade } from "svelte/transition";
+
   export let error;
   export let klass;
 </script>
@@ -9,12 +11,6 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
     font-weight: 600;
     padding: 0.5em;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    /*transform: translate(0, 5px);
-    animation: errorFade 0.3s ease-in-out forwards;*/
   }
 
   button {
@@ -47,7 +43,7 @@
   }
 </style>
 
-<aside class={klass}>
+<aside class={klass} transition:fade>
   <button>&times;</button>
   <p>{error.statusCode}: {error.message || error}</p>
 </aside>
