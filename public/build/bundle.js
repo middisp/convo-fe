@@ -4,7 +4,6 @@ var app = (function () {
     'use strict';
 
     function noop() { }
-    const identity = x => x;
     function add_location(element, file, line, column, char) {
         element.__svelte_meta = {
             loc: { file, line, column, char }
@@ -39,41 +38,6 @@ var app = (function () {
     }
     function null_to_empty(value) {
         return value == null ? '' : value;
-    }
-
-    const is_client = typeof window !== 'undefined';
-    let now = is_client
-        ? () => window.performance.now()
-        : () => Date.now();
-    let raf = is_client ? cb => requestAnimationFrame(cb) : noop;
-
-    const tasks = new Set();
-    function run_tasks(now) {
-        tasks.forEach(task => {
-            if (!task.c(now)) {
-                tasks.delete(task);
-                task.f();
-            }
-        });
-        if (tasks.size !== 0)
-            raf(run_tasks);
-    }
-    /**
-     * Creates a new task that runs on each raf frame
-     * until it returns a falsy value or is aborted
-     */
-    function loop(callback) {
-        let task;
-        if (tasks.size === 0)
-            raf(run_tasks);
-        return {
-            promise: new Promise(fulfill => {
-                tasks.add(task = { c: callback, f: fulfill });
-            }),
-            abort() {
-                tasks.delete(task);
-            }
-        };
     }
 
     function append(target, node) {
@@ -127,62 +91,6 @@ var app = (function () {
         const e = document.createEvent('CustomEvent');
         e.initCustomEvent(type, false, false, detail);
         return e;
-    }
-
-    let stylesheet;
-    let active = 0;
-    let current_rules = {};
-    // https://github.com/darkskyapp/string-hash/blob/master/index.js
-    function hash(str) {
-        let hash = 5381;
-        let i = str.length;
-        while (i--)
-            hash = ((hash << 5) - hash) ^ str.charCodeAt(i);
-        return hash >>> 0;
-    }
-    function create_rule(node, a, b, duration, delay, ease, fn, uid = 0) {
-        const step = 16.666 / duration;
-        let keyframes = '{\n';
-        for (let p = 0; p <= 1; p += step) {
-            const t = a + (b - a) * ease(p);
-            keyframes += p * 100 + `%{${fn(t, 1 - t)}}\n`;
-        }
-        const rule = keyframes + `100% {${fn(b, 1 - b)}}\n}`;
-        const name = `__svelte_${hash(rule)}_${uid}`;
-        if (!current_rules[name]) {
-            if (!stylesheet) {
-                const style = element('style');
-                document.head.appendChild(style);
-                stylesheet = style.sheet;
-            }
-            current_rules[name] = true;
-            stylesheet.insertRule(`@keyframes ${name} ${rule}`, stylesheet.cssRules.length);
-        }
-        const animation = node.style.animation || '';
-        node.style.animation = `${animation ? `${animation}, ` : ``}${name} ${duration}ms linear ${delay}ms 1 both`;
-        active += 1;
-        return name;
-    }
-    function delete_rule(node, name) {
-        node.style.animation = (node.style.animation || '')
-            .split(', ')
-            .filter(name
-            ? anim => anim.indexOf(name) < 0 // remove specific animation
-            : anim => anim.indexOf('__svelte') === -1 // remove all Svelte animations
-        )
-            .join(', ');
-        if (name && !--active)
-            clear_rules();
-    }
-    function clear_rules() {
-        raf(() => {
-            if (active)
-                return;
-            let i = stylesheet.cssRules.length;
-            while (i--)
-                stylesheet.deleteRule(i);
-            current_rules = {};
-        });
     }
 
     let current_component;
@@ -270,20 +178,6 @@ var app = (function () {
             $$.after_update.forEach(add_render_callback);
         }
     }
-
-    let promise;
-    function wait() {
-        if (!promise) {
-            promise = Promise.resolve();
-            promise.then(() => {
-                promise = null;
-            });
-        }
-        return promise;
-    }
-    function dispatch(node, direction, kind) {
-        node.dispatchEvent(custom_event(`${direction ? 'intro' : 'outro'}${kind}`));
-    }
     const outroing = new Set();
     let outros;
     function group_outros() {
@@ -320,112 +214,6 @@ var app = (function () {
             });
             block.o(local);
         }
-    }
-    const null_transition = { duration: 0 };
-    function create_bidirectional_transition(node, fn, params, intro) {
-        let config = fn(node, params);
-        let t = intro ? 0 : 1;
-        let running_program = null;
-        let pending_program = null;
-        let animation_name = null;
-        function clear_animation() {
-            if (animation_name)
-                delete_rule(node, animation_name);
-        }
-        function init(program, duration) {
-            const d = program.b - t;
-            duration *= Math.abs(d);
-            return {
-                a: t,
-                b: program.b,
-                d,
-                duration,
-                start: program.start,
-                end: program.start + duration,
-                group: program.group
-            };
-        }
-        function go(b) {
-            const { delay = 0, duration = 300, easing = identity, tick = noop, css } = config || null_transition;
-            const program = {
-                start: now() + delay,
-                b
-            };
-            if (!b) {
-                // @ts-ignore todo: improve typings
-                program.group = outros;
-                outros.r += 1;
-            }
-            if (running_program) {
-                pending_program = program;
-            }
-            else {
-                // if this is an intro, and there's a delay, we need to do
-                // an initial tick and/or apply CSS animation immediately
-                if (css) {
-                    clear_animation();
-                    animation_name = create_rule(node, t, b, duration, delay, easing, css);
-                }
-                if (b)
-                    tick(0, 1);
-                running_program = init(program, duration);
-                add_render_callback(() => dispatch(node, b, 'start'));
-                loop(now => {
-                    if (pending_program && now > pending_program.start) {
-                        running_program = init(pending_program, duration);
-                        pending_program = null;
-                        dispatch(node, running_program.b, 'start');
-                        if (css) {
-                            clear_animation();
-                            animation_name = create_rule(node, t, running_program.b, running_program.duration, 0, easing, config.css);
-                        }
-                    }
-                    if (running_program) {
-                        if (now >= running_program.end) {
-                            tick(t = running_program.b, 1 - t);
-                            dispatch(node, running_program.b, 'end');
-                            if (!pending_program) {
-                                // we're done
-                                if (running_program.b) {
-                                    // intro — we can tidy up immediately
-                                    clear_animation();
-                                }
-                                else {
-                                    // outro — needs to be coordinated
-                                    if (!--running_program.group.r)
-                                        run_all(running_program.group.c);
-                                }
-                            }
-                            running_program = null;
-                        }
-                        else if (now >= running_program.start) {
-                            const p = now - running_program.start;
-                            t = running_program.a + running_program.d * easing(p / running_program.duration);
-                            tick(t, 1 - t);
-                        }
-                    }
-                    return !!(running_program || pending_program);
-                });
-            }
-        }
-        return {
-            run(b) {
-                if (is_function(config)) {
-                    wait().then(() => {
-                        // @ts-ignore
-                        config = config();
-                        go(b);
-                    });
-                }
-                else {
-                    go(b);
-                }
-            },
-            end() {
-                clear_animation();
-                running_program = pending_program = null;
-            }
-        };
     }
 
     const globals = (typeof window !== 'undefined' ? window : global);
@@ -1123,17 +911,8 @@ var app = (function () {
     	}
     }
 
-    function fade(node, { delay = 0, duration = 400, easing = identity }) {
-        const o = +getComputedStyle(node).opacity;
-        return {
-            delay,
-            duration,
-            easing,
-            css: t => `opacity: ${t * o}`
-        };
-    }
-
     /* src\components\UserMessage.svelte generated by Svelte v3.16.7 */
+
     const file$2 = "src\\components\\UserMessage.svelte";
 
     function create_fragment$2(ctx) {
@@ -1141,14 +920,10 @@ var app = (function () {
     	let button;
     	let t1;
     	let p;
-    	let t2_value = /*error*/ ctx[0].statusCode + "";
+    	let t2_value = /*alert*/ ctx[0].message + "";
     	let t2;
-    	let t3;
-    	let t4_value = (/*error*/ ctx[0].message || /*error*/ ctx[0]) + "";
-    	let t4;
     	let aside_class_value;
-    	let aside_transition;
-    	let current;
+    	let dispose;
 
     	const block = {
     		c: function create() {
@@ -1158,14 +933,13 @@ var app = (function () {
     			t1 = space();
     			p = element("p");
     			t2 = text(t2_value);
-    			t3 = text(": ");
-    			t4 = text(t4_value);
-    			attr_dev(button, "class", "svelte-97d0yc");
-    			add_location(button, file$2, 46, 2, 857);
-    			attr_dev(p, "class", "svelte-97d0yc");
-    			add_location(p, file$2, 47, 2, 885);
-    			attr_dev(aside, "class", aside_class_value = "" + (null_to_empty(/*klass*/ ctx[1]) + " svelte-97d0yc"));
-    			add_location(aside, file$2, 45, 0, 816);
+    			attr_dev(button, "class", "svelte-1vvnr8s");
+    			add_location(button, file$2, 51, 2, 959);
+    			attr_dev(p, "class", "svelte-1vvnr8s");
+    			add_location(p, file$2, 52, 2, 1019);
+    			attr_dev(aside, "class", aside_class_value = "" + (null_to_empty(/*alert*/ ctx[0].type) + " svelte-1vvnr8s"));
+    			add_location(aside, file$2, 50, 0, 929);
+    			dispose = listen_dev(button, "click", /*click_handler*/ ctx[1], false, false, false);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1176,36 +950,19 @@ var app = (function () {
     			append_dev(aside, t1);
     			append_dev(aside, p);
     			append_dev(p, t2);
-    			append_dev(p, t3);
-    			append_dev(p, t4);
-    			current = true;
     		},
     		p: function update(ctx, [dirty]) {
-    			if ((!current || dirty & /*error*/ 1) && t2_value !== (t2_value = /*error*/ ctx[0].statusCode + "")) set_data_dev(t2, t2_value);
-    			if ((!current || dirty & /*error*/ 1) && t4_value !== (t4_value = (/*error*/ ctx[0].message || /*error*/ ctx[0]) + "")) set_data_dev(t4, t4_value);
+    			if (dirty & /*alert*/ 1 && t2_value !== (t2_value = /*alert*/ ctx[0].message + "")) set_data_dev(t2, t2_value);
 
-    			if (!current || dirty & /*klass*/ 2 && aside_class_value !== (aside_class_value = "" + (null_to_empty(/*klass*/ ctx[1]) + " svelte-97d0yc"))) {
+    			if (dirty & /*alert*/ 1 && aside_class_value !== (aside_class_value = "" + (null_to_empty(/*alert*/ ctx[0].type) + " svelte-1vvnr8s"))) {
     				attr_dev(aside, "class", aside_class_value);
     			}
     		},
-    		i: function intro(local) {
-    			if (current) return;
-
-    			add_render_callback(() => {
-    				if (!aside_transition) aside_transition = create_bidirectional_transition(aside, fade, {}, true);
-    				aside_transition.run(1);
-    			});
-
-    			current = true;
-    		},
-    		o: function outro(local) {
-    			if (!aside_transition) aside_transition = create_bidirectional_transition(aside, fade, {}, false);
-    			aside_transition.run(0);
-    			current = false;
-    		},
+    		i: noop,
+    		o: noop,
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(aside);
-    			if (detaching && aside_transition) aside_transition.end();
+    			dispose();
     		}
     	};
 
@@ -1221,35 +978,34 @@ var app = (function () {
     }
 
     function instance$2($$self, $$props, $$invalidate) {
-    	let { error } = $$props;
-    	let { klass } = $$props;
-    	const writable_props = ["error", "klass"];
+    	let { alert } = $$props;
+    	const writable_props = ["alert"];
 
     	Object.keys($$props).forEach(key => {
     		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<UserMessage> was created with unknown prop '${key}'`);
     	});
 
+    	const click_handler = () => $$invalidate(0, alert = null);
+
     	$$self.$set = $$props => {
-    		if ("error" in $$props) $$invalidate(0, error = $$props.error);
-    		if ("klass" in $$props) $$invalidate(1, klass = $$props.klass);
+    		if ("alert" in $$props) $$invalidate(0, alert = $$props.alert);
     	};
 
     	$$self.$capture_state = () => {
-    		return { error, klass };
+    		return { alert };
     	};
 
     	$$self.$inject_state = $$props => {
-    		if ("error" in $$props) $$invalidate(0, error = $$props.error);
-    		if ("klass" in $$props) $$invalidate(1, klass = $$props.klass);
+    		if ("alert" in $$props) $$invalidate(0, alert = $$props.alert);
     	};
 
-    	return [error, klass];
+    	return [alert, click_handler];
     }
 
     class UserMessage extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance$2, create_fragment$2, safe_not_equal, { error: 0, klass: 1 });
+    		init(this, options, instance$2, create_fragment$2, safe_not_equal, { alert: 0 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
@@ -1261,28 +1017,16 @@ var app = (function () {
     		const { ctx } = this.$$;
     		const props = options.props || ({});
 
-    		if (/*error*/ ctx[0] === undefined && !("error" in props)) {
-    			console.warn("<UserMessage> was created without expected prop 'error'");
-    		}
-
-    		if (/*klass*/ ctx[1] === undefined && !("klass" in props)) {
-    			console.warn("<UserMessage> was created without expected prop 'klass'");
+    		if (/*alert*/ ctx[0] === undefined && !("alert" in props)) {
+    			console.warn("<UserMessage> was created without expected prop 'alert'");
     		}
     	}
 
-    	get error() {
+    	get alert() {
     		throw new Error("<UserMessage>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
     	}
 
-    	set error(value) {
-    		throw new Error("<UserMessage>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	get klass() {
-    		throw new Error("<UserMessage>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
-    	}
-
-    	set klass(value) {
+    	set alert(value) {
     		throw new Error("<UserMessage>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
     	}
     }
@@ -1290,19 +1034,23 @@ var app = (function () {
     /* src\Views\Login.svelte generated by Svelte v3.16.7 */
     const file$3 = "src\\Views\\Login.svelte";
 
-    // (48:0) {#if error}
+    // (55:0) {#if alert}
     function create_if_block(ctx) {
+    	let updating_alert;
     	let current;
 
-    	const usermessage = new UserMessage({
-    			props: {
-    				klass: "error",
-    				error: /*error*/ ctx[2],
-    				$$slots: { default: [create_default_slot] },
-    				$$scope: { ctx }
-    			},
-    			$$inline: true
-    		});
+    	function usermessage_alert_binding(value) {
+    		/*usermessage_alert_binding*/ ctx[5].call(null, value);
+    	}
+
+    	let usermessage_props = {};
+
+    	if (/*alert*/ ctx[2] !== void 0) {
+    		usermessage_props.alert = /*alert*/ ctx[2];
+    	}
+
+    	const usermessage = new UserMessage({ props: usermessage_props, $$inline: true });
+    	binding_callbacks.push(() => bind(usermessage, "alert", usermessage_alert_binding));
 
     	const block = {
     		c: function create() {
@@ -1314,10 +1062,11 @@ var app = (function () {
     		},
     		p: function update(ctx, dirty) {
     			const usermessage_changes = {};
-    			if (dirty & /*error*/ 4) usermessage_changes.error = /*error*/ ctx[2];
 
-    			if (dirty & /*$$scope, error*/ 132) {
-    				usermessage_changes.$$scope = { dirty, ctx };
+    			if (!updating_alert && dirty & /*alert*/ 4) {
+    				updating_alert = true;
+    				usermessage_changes.alert = /*alert*/ ctx[2];
+    				add_flush_callback(() => updating_alert = false);
     			}
 
     			usermessage.$set(usermessage_changes);
@@ -1340,38 +1089,7 @@ var app = (function () {
     		block,
     		id: create_if_block.name,
     		type: "if",
-    		source: "(48:0) {#if error}",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (49:2) <UserMessage klass="error" {error}>
-    function create_default_slot(ctx) {
-    	let t_value = (/*error*/ ctx[2].message || /*error*/ ctx[2]) + "";
-    	let t;
-
-    	const block = {
-    		c: function create() {
-    			t = text(t_value);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, t, anchor);
-    		},
-    		p: function update(ctx, dirty) {
-    			if (dirty & /*error*/ 4 && t_value !== (t_value = (/*error*/ ctx[2].message || /*error*/ ctx[2]) + "")) set_data_dev(t, t_value);
-    		},
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(t);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_default_slot.name,
-    		type: "slot",
-    		source: "(49:2) <UserMessage klass=\\\"error\\\" {error}>",
+    		source: "(55:0) {#if alert}",
     		ctx
     	});
 
@@ -1379,8 +1097,8 @@ var app = (function () {
     }
 
     function create_fragment$3(ctx) {
-    	let t0;
     	let h1;
+    	let t1;
     	let t2;
     	let form;
     	let updating_value;
@@ -1388,10 +1106,10 @@ var app = (function () {
     	let updating_value_1;
     	let t4;
     	let current;
-    	let if_block = /*error*/ ctx[2] && create_if_block(ctx);
+    	let if_block = /*alert*/ ctx[2] && create_if_block(ctx);
 
     	function input0_value_binding(value) {
-    		/*input0_value_binding*/ ctx[5].call(null, value);
+    		/*input0_value_binding*/ ctx[6].call(null, value);
     	}
 
     	let input0_props = {
@@ -1409,7 +1127,7 @@ var app = (function () {
     	binding_callbacks.push(() => bind(input0, "value", input0_value_binding));
 
     	function input1_value_binding(value_1) {
-    		/*input1_value_binding*/ ctx[6].call(null, value_1);
+    		/*input1_value_binding*/ ctx[7].call(null, value_1);
     	}
 
     	let input1_props = {
@@ -1440,10 +1158,10 @@ var app = (function () {
 
     	const block = {
     		c: function create() {
-    			if (if_block) if_block.c();
-    			t0 = space();
     			h1 = element("h1");
     			h1.textContent = "Hi!";
+    			t1 = space();
+    			if (if_block) if_block.c();
     			t2 = space();
     			form = element("form");
     			create_component(input0.$$.fragment);
@@ -1451,17 +1169,18 @@ var app = (function () {
     			create_component(input1.$$.fragment);
     			t4 = space();
     			create_component(button.$$.fragment);
-    			add_location(h1, file$3, 50, 0, 1347);
+    			attr_dev(h1, "class", "svelte-l33yj5");
+    			add_location(h1, file$3, 53, 0, 1368);
     			attr_dev(form, "action", "post");
-    			add_location(form, file$3, 51, 0, 1361);
+    			add_location(form, file$3, 57, 0, 1432);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
     		},
     		m: function mount(target, anchor) {
-    			if (if_block) if_block.m(target, anchor);
-    			insert_dev(target, t0, anchor);
     			insert_dev(target, h1, anchor);
+    			insert_dev(target, t1, anchor);
+    			if (if_block) if_block.m(target, anchor);
     			insert_dev(target, t2, anchor);
     			insert_dev(target, form, anchor);
     			mount_component(input0, form, null);
@@ -1472,7 +1191,7 @@ var app = (function () {
     			current = true;
     		},
     		p: function update(ctx, [dirty]) {
-    			if (/*error*/ ctx[2]) {
+    			if (/*alert*/ ctx[2]) {
     				if (if_block) {
     					if_block.p(ctx, dirty);
     					transition_in(if_block, 1);
@@ -1480,7 +1199,7 @@ var app = (function () {
     					if_block = create_if_block(ctx);
     					if_block.c();
     					transition_in(if_block, 1);
-    					if_block.m(t0.parentNode, t0);
+    					if_block.m(t2.parentNode, t2);
     				}
     			} else if (if_block) {
     				group_outros();
@@ -1530,9 +1249,9 @@ var app = (function () {
     			current = false;
     		},
     		d: function destroy(detaching) {
-    			if (if_block) if_block.d(detaching);
-    			if (detaching) detach_dev(t0);
     			if (detaching) detach_dev(h1);
+    			if (detaching) detach_dev(t1);
+    			if (if_block) if_block.d(detaching);
     			if (detaching) detach_dev(t2);
     			if (detaching) detach_dev(form);
     			destroy_component(input0);
@@ -1555,7 +1274,7 @@ var app = (function () {
     function instance$3($$self, $$props, $$invalidate) {
     	let email = "";
     	let password = "";
-    	let error;
+    	let alert;
 
     	const saveToSession = data => {
     		window.sessionStorage.setItem("token", data);
@@ -1563,7 +1282,7 @@ var app = (function () {
 
     	const login = () => {
     		if (!email || !password) {
-    			return $$invalidate(2, error = "Please provide your login details");
+    			return error = "Please provide your login details";
     		}
 
     		fetch("http://localhost:3000/login", {
@@ -1572,7 +1291,7 @@ var app = (function () {
     			body: JSON.stringify({ email, password })
     		}).then(res => res.json()).then(result => {
     			if (result.statusCode) {
-    				$$invalidate(2, error = result);
+    				$$invalidate(2, alert = { message: result.message, type: "error" });
     			} else {
     				user.set(result.user);
     				isLoggedIn.set(true);
@@ -1581,10 +1300,15 @@ var app = (function () {
     				window.history.pushState({ path: "/threads" }, "", window.location.origin + "/threads");
     			}
     		}).catch(e => {
-    			$$invalidate(2, error = e);
+    			$$invalidate(2, alert = { message: e, type: "error" });
     			console.log(e);
     		});
     	};
+
+    	function usermessage_alert_binding(value) {
+    		alert = value;
+    		$$invalidate(2, alert);
+    	}
 
     	function input0_value_binding(value) {
     		email = value;
@@ -1603,15 +1327,16 @@ var app = (function () {
     	$$self.$inject_state = $$props => {
     		if ("email" in $$props) $$invalidate(0, email = $$props.email);
     		if ("password" in $$props) $$invalidate(1, password = $$props.password);
-    		if ("error" in $$props) $$invalidate(2, error = $$props.error);
+    		if ("alert" in $$props) $$invalidate(2, alert = $$props.alert);
     	};
 
     	return [
     		email,
     		password,
-    		error,
+    		alert,
     		login,
     		saveToSession,
+    		usermessage_alert_binding,
     		input0_value_binding,
     		input1_value_binding
     	];
@@ -2054,7 +1779,7 @@ var app = (function () {
     /* src\Views\Profile.svelte generated by Svelte v3.16.7 */
     const file$6 = "src\\Views\\Profile.svelte";
 
-    // (94:0) {#if $user}
+    // (96:0) {#if $user}
     function create_if_block$2(ctx) {
     	let t0;
     	let form0;
@@ -2079,10 +1804,10 @@ var app = (function () {
     	let updating_value_5;
     	let t10;
     	let current;
-    	let if_block0 = /*error*/ ctx[4] && create_if_block_2(ctx);
+    	let if_block0 = /*alert*/ ctx[4] && create_if_block_2(ctx);
 
     	function toggle_value_binding(value) {
-    		/*toggle_value_binding*/ ctx[10].call(null, value);
+    		/*toggle_value_binding*/ ctx[11].call(null, value);
     	}
 
     	let toggle_props = { name: "edit", labelText: "Edit" };
@@ -2095,7 +1820,7 @@ var app = (function () {
     	binding_callbacks.push(() => bind(toggle, "value", toggle_value_binding));
 
     	function input0_value_binding(value_1) {
-    		/*input0_value_binding*/ ctx[11].call(null, value_1);
+    		/*input0_value_binding*/ ctx[12].call(null, value_1);
     	}
 
     	let input0_props = {
@@ -2114,7 +1839,7 @@ var app = (function () {
     	binding_callbacks.push(() => bind(input0, "value", input0_value_binding));
 
     	function input1_value_binding(value_2) {
-    		/*input1_value_binding*/ ctx[12].call(null, value_2);
+    		/*input1_value_binding*/ ctx[13].call(null, value_2);
     	}
 
     	let input1_props = {
@@ -2134,7 +1859,7 @@ var app = (function () {
     	let if_block1 = /*isEditable*/ ctx[0] && create_if_block_1(ctx);
 
     	function input2_value_binding(value_3) {
-    		/*input2_value_binding*/ ctx[13].call(null, value_3);
+    		/*input2_value_binding*/ ctx[14].call(null, value_3);
     	}
 
     	let input2_props = {
@@ -2152,7 +1877,7 @@ var app = (function () {
     	binding_callbacks.push(() => bind(input2, "value", input2_value_binding));
 
     	function input3_value_binding(value_4) {
-    		/*input3_value_binding*/ ctx[14].call(null, value_4);
+    		/*input3_value_binding*/ ctx[15].call(null, value_4);
     	}
 
     	let input3_props = {
@@ -2170,7 +1895,7 @@ var app = (function () {
     	binding_callbacks.push(() => bind(input3, "value", input3_value_binding));
 
     	function input4_value_binding(value_5) {
-    		/*input4_value_binding*/ ctx[15].call(null, value_5);
+    		/*input4_value_binding*/ ctx[16].call(null, value_5);
     	}
 
     	let input4_props = {
@@ -2227,12 +1952,12 @@ var app = (function () {
     			if (img.src !== (img_src_value = "/images/default-avatar.png")) attr_dev(img, "src", img_src_value);
     			attr_dev(img, "alt", img_alt_value = /*updatedUser*/ ctx[5].name);
     			attr_dev(img, "class", "svelte-1v6aass");
-    			add_location(img, file$6, 98, 4, 2425);
+    			add_location(img, file$6, 100, 4, 2703);
     			attr_dev(form0, "class", "userDetails svelte-1v6aass");
-    			add_location(form0, file$6, 97, 2, 2393);
-    			add_location(legend, file$6, 122, 4, 3065);
+    			add_location(form0, file$6, 99, 2, 2671);
+    			add_location(legend, file$6, 124, 4, 3343);
     			attr_dev(form1, "class", "passwordManagement svelte-1v6aass");
-    			add_location(form1, file$6, 121, 2, 3026);
+    			add_location(form1, file$6, 123, 2, 3304);
     		},
     		m: function mount(target, anchor) {
     			if (if_block0) if_block0.m(target, anchor);
@@ -2261,7 +1986,7 @@ var app = (function () {
     			current = true;
     		},
     		p: function update(ctx, dirty) {
-    			if (/*error*/ ctx[4]) {
+    			if (/*alert*/ ctx[4]) {
     				if (if_block0) {
     					if_block0.p(ctx, dirty);
     					transition_in(if_block0, 1);
@@ -2409,26 +2134,30 @@ var app = (function () {
     		block,
     		id: create_if_block$2.name,
     		type: "if",
-    		source: "(94:0) {#if $user}",
+    		source: "(96:0) {#if $user}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (95:2) {#if error}
+    // (97:2) {#if alert}
     function create_if_block_2(ctx) {
+    	let updating_alert;
     	let current;
 
-    	const usermessage = new UserMessage({
-    			props: {
-    				klass: "error",
-    				error: /*error*/ ctx[4],
-    				$$slots: { default: [create_default_slot$1] },
-    				$$scope: { ctx }
-    			},
-    			$$inline: true
-    		});
+    	function usermessage_alert_binding(value) {
+    		/*usermessage_alert_binding*/ ctx[10].call(null, value);
+    	}
+
+    	let usermessage_props = {};
+
+    	if (/*alert*/ ctx[4] !== void 0) {
+    		usermessage_props.alert = /*alert*/ ctx[4];
+    	}
+
+    	const usermessage = new UserMessage({ props: usermessage_props, $$inline: true });
+    	binding_callbacks.push(() => bind(usermessage, "alert", usermessage_alert_binding));
 
     	const block = {
     		c: function create() {
@@ -2440,10 +2169,11 @@ var app = (function () {
     		},
     		p: function update(ctx, dirty) {
     			const usermessage_changes = {};
-    			if (dirty & /*error*/ 16) usermessage_changes.error = /*error*/ ctx[4];
 
-    			if (dirty & /*$$scope, error*/ 65552) {
-    				usermessage_changes.$$scope = { dirty, ctx };
+    			if (!updating_alert && dirty & /*alert*/ 16) {
+    				updating_alert = true;
+    				usermessage_changes.alert = /*alert*/ ctx[4];
+    				add_flush_callback(() => updating_alert = false);
     			}
 
     			usermessage.$set(usermessage_changes);
@@ -2466,45 +2196,14 @@ var app = (function () {
     		block,
     		id: create_if_block_2.name,
     		type: "if",
-    		source: "(95:2) {#if error}",
+    		source: "(97:2) {#if alert}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (96:4) <UserMessage klass="error" {error}>
-    function create_default_slot$1(ctx) {
-    	let t_value = (/*error*/ ctx[4].message || /*error*/ ctx[4]) + "";
-    	let t;
-
-    	const block = {
-    		c: function create() {
-    			t = text(t_value);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, t, anchor);
-    		},
-    		p: function update(ctx, dirty) {
-    			if (dirty & /*error*/ 16 && t_value !== (t_value = (/*error*/ ctx[4].message || /*error*/ ctx[4]) + "")) set_data_dev(t, t_value);
-    		},
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(t);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_default_slot$1.name,
-    		type: "slot",
-    		source: "(96:4) <UserMessage klass=\\\"error\\\" {error}>",
-    		ctx
-    	});
-
-    	return block;
-    }
-
-    // (117:4) {#if isEditable}
+    // (119:4) {#if isEditable}
     function create_if_block_1(ctx) {
     	let current;
 
@@ -2546,7 +2245,7 @@ var app = (function () {
     		block,
     		id: create_if_block_1.name,
     		type: "if",
-    		source: "(117:4) {#if isEditable}",
+    		source: "(119:4) {#if isEditable}",
     		ctx
     	});
 
@@ -2629,7 +2328,7 @@ var app = (function () {
     	let currentPassword = "";
     	let newPassword = "";
     	let confNewPassword = "";
-    	let error;
+    	let alert = {};
     	let updatedUser = $user;
 
     	const save = () => {
@@ -2642,23 +2341,34 @@ var app = (function () {
     			body: JSON.stringify(updatedUser)
     		}).then(res => res.json()).then(result => {
     			if (result.statusCode) {
-    				$$invalidate(4, error = result);
+    				$$invalidate(4, alert = { message: result.message, type: "error" });
     			}
 
     			user.update(result => result);
+
+    			$$invalidate(4, alert = {
+    				message: "Update successful",
+    				type: "success"
+    			});
     		}).catch(e => {
-    			$$invalidate(4, error = e);
+    			$$invalidate(4, alert = { message: e, type: "error" });
     			console.log(e);
     		});
     	};
 
     	const updatePassword = () => {
     		if (!currentPassword || !newPassword || !confNewPassword) {
-    			return $$invalidate(4, error = "Please provide passwords");
+    			return $$invalidate(4, alert = {
+    				message: "Please provide passwords",
+    				type: "error"
+    			});
     		}
 
     		if (newPassword !== confNewPassword) {
-    			return $$invalidate(4, error = "Passwords don't match");
+    			return error = {
+    				message: "Passwords don't match",
+    				type: "error"
+    			};
     		}
 
     		fetch(`http://localhost:3000/login/updatePassword/${$user._id}`, {
@@ -2670,15 +2380,25 @@ var app = (function () {
     			body: JSON.stringify({ currentPassword, newPassword })
     		}).then(res => res.json()).then(result => {
     			if (result.statusCode) {
-    				$$invalidate(4, error = result);
+    				$$invalidate(4, alert = { message: result.message, type: "error" });
     			}
 
     			user.update(result => result);
+
+    			$$invalidate(4, alert = {
+    				message: "Update successful",
+    				type: "success"
+    			});
     		}).catch(e => {
-    			$$invalidate(4, error = e);
+    			$$invalidate(4, alert = { message: e, type: "error" });
     			console.log(e);
     		});
     	};
+
+    	function usermessage_alert_binding(value) {
+    		alert = value;
+    		$$invalidate(4, alert);
+    	}
 
     	function toggle_value_binding(value) {
     		isEditable = value;
@@ -2719,7 +2439,7 @@ var app = (function () {
     		if ("currentPassword" in $$props) $$invalidate(1, currentPassword = $$props.currentPassword);
     		if ("newPassword" in $$props) $$invalidate(2, newPassword = $$props.newPassword);
     		if ("confNewPassword" in $$props) $$invalidate(3, confNewPassword = $$props.confNewPassword);
-    		if ("error" in $$props) $$invalidate(4, error = $$props.error);
+    		if ("alert" in $$props) $$invalidate(4, alert = $$props.alert);
     		if ("updatedUser" in $$props) $$invalidate(5, updatedUser = $$props.updatedUser);
     		if ("$user" in $$props) user.set($user = $$props.$user);
     		if ("$token" in $$props) token.set($token = $$props.$token);
@@ -2730,12 +2450,13 @@ var app = (function () {
     		currentPassword,
     		newPassword,
     		confNewPassword,
-    		error,
+    		alert,
     		updatedUser,
     		$user,
     		save,
     		updatePassword,
     		$token,
+    		usermessage_alert_binding,
     		toggle_value_binding,
     		input0_value_binding,
     		input1_value_binding,

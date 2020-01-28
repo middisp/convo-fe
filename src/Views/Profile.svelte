@@ -10,7 +10,7 @@
   let currentPassword = "";
   let newPassword = "";
   let confNewPassword = "";
-  let error;
+  let alert = {};
   let updatedUser = $user;
 
   const save = () => {
@@ -25,23 +25,24 @@
       .then(res => res.json())
       .then(result => {
         if (result.statusCode) {
-          error = result;
+          alert = { message: result.message, type: "error" };
         }
         user.update(result => result);
+        alert = { message: "Update successful", type: "success" };
       })
       .catch(e => {
-        error = e;
+        alert = { message: e, type: "error" };
         console.log(e);
       });
   };
 
   const updatePassword = () => {
     if (!currentPassword || !newPassword || !confNewPassword) {
-      return (error = "Please provide passwords");
+      return (alert = { message: "Please provide passwords", type: "error" });
     }
 
     if (newPassword !== confNewPassword) {
-      return (error = "Passwords don't match");
+      return (error = { message: "Passwords don't match", type: "error" });
     }
     fetch(`http://localhost:3000/login/updatePassword/${$user._id}`, {
       method: "put",
@@ -54,12 +55,13 @@
       .then(res => res.json())
       .then(result => {
         if (result.statusCode) {
-          error = result;
+          alert = { message: result.message, type: "error" };
         }
         user.update(result => result);
+        alert = { message: "Update successful", type: "success" };
       })
       .catch(e => {
-        error = e;
+        alert = { message: e, type: "error" };
         console.log(e);
       });
   };
@@ -92,8 +94,8 @@
 </style>
 
 {#if $user}
-  {#if error}
-    <UserMessage klass="error" {error}>{error.message || error}</UserMessage>
+  {#if alert}
+    <UserMessage bind:alert />
   {/if}
   <form class="userDetails">
     <img src="/images/default-avatar.png" alt={updatedUser.name} />
