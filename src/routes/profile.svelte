@@ -14,7 +14,7 @@
   let updatedUser = $user;
 
   const save = () => {
-    fetch(`http://localhost:3000/user/update/${updatedUser._id}`, {
+    fetch(`http://localhost:3001/user/update/${updatedUser._id}`, {
       method: "put",
       headers: {
         "Content-Type": "application/json",
@@ -44,7 +44,7 @@
     if (newPassword !== confNewPassword) {
       return (error = { message: "Passwords don't match", type: "error" });
     }
-    fetch(`http://localhost:3000/login/updatePassword/${$user._id}`, {
+    fetch(`http://localhost:3001/login/updatePassword/${$user._id}`, {
       method: "put",
       headers: {
         "Content-Type": "application/json",

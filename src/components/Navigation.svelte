@@ -13,10 +13,6 @@
     width: 50%;
     z-index: 1;
   }
-
-  nav.show {
-    transform: translate(0, 0);
-  }
   ul {
     list-style: none;
     margin: 0;
