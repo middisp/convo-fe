@@ -24,18 +24,19 @@
   }
 
   header {
-    display: flex;
-    width: 100%;
+    align-items: center;
     background-color: var(--primary);
-    color: var(--secondary);
-    padding: 0.5em 0.5em;
     box-shadow: 0 2px 2px rgba(0, 0, 0, 0.3);
+    color: var(--secondary);
+    display: flex;
+    padding: 0.5em 0.5em;
+    width: 100%;
   }
 
   h1 {
+    display: flex;
     margin: 0;
     order: 2;
-    display: flex;
   }
 
   button {
@@ -44,12 +45,12 @@
     color: inherit;
     display: flex;
     flex-direction: column;
-    height: 35px;
+    height: 20px;
     justify-content: space-between;
     margin-right: 1em;
     order: 1;
-    padding: 0.5em 0;
-    width: 30px;
+    padding: 0;
+    width: 25px;
   }
 
   button:focus,
@@ -70,7 +71,7 @@
 
   button.open .bar-one {
     transform-origin: right center;
-    transform: rotate(-41deg);
+    transform: rotate(-42deg);
   }
 
   button.open .bar-two {
@@ -79,7 +80,7 @@
 
   button.open .bar-three {
     transform-origin: right center;
-    transform: rotate(41deg);
+    transform: rotate(42deg);
   }
 
   .dotAnim {

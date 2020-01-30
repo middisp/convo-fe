@@ -10,7 +10,7 @@
   let currentPassword = "";
   let newPassword = "";
   let confNewPassword = "";
-  let alert = {};
+  let alert;
   let updatedUser = $user;
 
   const save = () => {
@@ -93,23 +93,46 @@
   }
 </style>
 
+<svelte:head>
+  <title>Convo - ${$user.firstName}</title>
+</svelte:head>
+
 {#if $user}
   {#if alert}
     <UserMessage bind:alert />
   {/if}
   <form class="userDetails">
-    <img src="/images/default-avatar.png" alt={updatedUser.name} />
+    <img
+      src="/images/default-avatar.png"
+      alt={`${updatedUser.firstName} ${updatedUser.lastName}`} />
     <Toggle name="edit" labelText="Edit" bind:value={isEditable} />
+
     <Input
       type="text"
-      name="name"
-      labelText="Name"
-      bind:value={updatedUser.name}
+      name="firstName"
+      labelText="First Name"
+      bind:value={updatedUser.firstName}
       disabled={!isEditable}
       required={false} />
 
     <Input
       type="text"
+      name="lastName"
+      labelText="Last Name"
+      bind:value={updatedUser.lastName}
+      disabled={!isEditable}
+      required={false} />
+
+    <Input
+      type="text"
+      name="displayName"
+      labelText="Display Name"
+      bind:value={updatedUser.displayName}
+      disabled={!isEditable}
+      required={false} />
+
+    <Input
+      type="email"
       name="email"
       labelText="Email"
       bind:value={updatedUser.email}

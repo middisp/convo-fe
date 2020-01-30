@@ -25,6 +25,10 @@
   });
 </script>
 
+<svelte:head>
+	<title>Convo - Threads</title>
+</svelte:head>
+
 <h1>Threads</h1>
 
 {#if threads.length}

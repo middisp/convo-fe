@@ -51,13 +51,17 @@
   }
 </style>
 
+<svelte:head>
+  <title>Convo - login</title>
+</svelte:head>
+
 <h1>Hi!</h1>
 {#if alert}
   <UserMessage bind:alert />
 {/if}
 <form action="post">
   <Input
-    type="text"
+    type="email"
     name="email"
     labelText="Email"
     bind:value={email}
