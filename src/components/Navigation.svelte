@@ -1,23 +1,8 @@
 <script>
-  import { onMount } from "svelte";
-
-  import router from "../router.js";
   import { curRoute } from "../store.js";
   import RouterLink from "../components/RouterLink.svelte";
 
   export let toggleNav;
-
-  onMount(() => {
-    curRoute.set(window.location.pathname);
-
-    if (!history.state) {
-      window.history.replaceState(
-        { path: window.location.pathname },
-        "",
-        window.location.href
-      );
-    }
-  });
 </script>
 
 <style>

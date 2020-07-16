@@ -6,7 +6,7 @@
   let threads = [];
 
   onMount(() => {
-    fetch(`http://localhost:3000/thread/${$user._id}`, {
+    fetch(`http://localhost:3001/thread/${$user._id}`, {
       method: "get",
       headers: {
         "Content-Type": "application/json",
