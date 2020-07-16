@@ -1,5 +1,4 @@
 <script>
-
   export let name;
   export let labelText;
   export let value;
@@ -24,7 +23,7 @@
     border-radius: 10px;
     display: block;
     font-size: inherit;
-    padding: 0.5em;
+    padding: 0.8rem;
     width: 100%;
     box-shadow: none;
   }
@@ -46,10 +45,11 @@
   }
 
   label + input {
-    margin-top: 0.5em;
+    margin-top: 1rem;
   }
-  input + label {
-    margin-top: 0.6em;
+  input + label,
+  label + label {
+    margin-top: 1.5rem;
   }
 </style>
 
