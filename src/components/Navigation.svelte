@@ -1,8 +1,20 @@
 <script>
-  import { curRoute } from "../store.js";
+  import { push } from "svelte-spa-router";
   import RouterLink from "../components/RouterLink.svelte";
+  import Button from "../components/Button.svelte";
+  import { navOpen, user, isLoggedIn } from "../store.js";
 
-  export let toggleNav;
+  const logout = () => {
+    // remove token
+    sessionStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("logout");
+    // redirect to login
+    navOpen.set(false);
+    isLoggedIn.set(false);
+    user.set();
+    push("/");
+  };
 </script>
 
 <style>
@@ -35,14 +47,10 @@
   }
 </style>
 
-<nav class={toggleNav ? 'show' : ''}>
+<nav class={$navOpen ? 'show' : ''}>
   <ul>
     <li>
-      <RouterLink
-        on:click={() => {
-          toggleNav = !toggleNav;
-        }}
-        page={{ path: '/profile', name: 'Profile' }} />
+      <RouterLink page={{ path: '/profile', name: 'Profile' }} />
     </li>
     <li>
       <RouterLink page={{ path: '/mates', name: 'Mates' }} />
@@ -51,4 +59,5 @@
       <RouterLink page={{ path: '/threads', name: 'Threads' }} />
     </li>
   </ul>
+  <Button type="submit" on:click={logout} klass="primary" text="Logout" />
 </nav>

@@ -1,5 +1,6 @@
 <script>
   import { link } from "svelte-spa-router";
+  import { navOpen } from "../store.js";
 
   export let page = {
     path: "/",
@@ -14,4 +15,11 @@
   }
 </style>
 
-<a href={page.path} use:link>{page.name}</a>
+<a
+  href={page.path}
+  use:link
+  on:click={() => {
+    navOpen.set(false);
+  }}>
+  {page.name}
+</a>
