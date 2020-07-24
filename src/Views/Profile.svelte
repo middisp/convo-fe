@@ -1,4 +1,5 @@
 <script>
+  import { onMount } from "svelte";
   import { user, token } from "../store.js";
 
   import Input from "../components/Input.svelte";
@@ -12,6 +13,27 @@
   let confNewPassword = "";
   let alert = {};
   let updatedUser = $user;
+
+  onMount(() => {
+    if (!$user) {
+      fetch(`http://localhost:3001/user/${$user._id}`, {
+        method: "get",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `bearer: ${$token}`
+        }
+      })
+        .then(res => res.json())
+        .then(result => {
+          if (result.statusCode) {
+            error = result;
+          } else {
+            user.set(result.user);
+          }
+        })
+        .catch(e => console.log(e));
+    }
+  });
 
   const save = () => {
     fetch(`http://localhost:3001/user/update/${updatedUser._id}`, {
@@ -107,9 +129,25 @@
     <Toggle name="edit" labelText="Edit" bind:value={isEditable} />
     <Input
       type="text"
-      name="name"
-      labelText="Name"
+      name="displayName"
+      labelText="Display name"
+      bind:value={updatedUser.displayName}
+      disabled={!isEditable}
+      required={false} />
+
+    <Input
+      type="text"
+      name="firstName"
+      labelText="First name"
       bind:value={updatedUser.firstName}
+      disabled={!isEditable}
+      required={false} />
+
+    <Input
+      type="text"
+      name="lastName"
+      labelText="Last name"
+      bind:value={updatedUser.lastName}
       disabled={!isEditable}
       required={false} />
 

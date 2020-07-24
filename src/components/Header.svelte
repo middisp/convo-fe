@@ -1,9 +1,9 @@
 <script>
+  import { navOpen } from "../store.js";
   export let showNav = false;
-  export let toggleNav;
 
   const handleClick = () => {
-    toggleNav = !toggleNav;
+    navOpen.set(!$navOpen);
   };
 </script>
 
@@ -122,7 +122,7 @@
     </span>
   </h1>
   {#if showNav}
-    <button class={toggleNav ? 'open' : ''} on:click={handleClick}>
+    <button class={$navOpen ? 'open' : ''} on:click={handleClick}>
       <div class="bar bar-one" />
       <div class="bar bar-two" />
       <div class="bar bar-three" />

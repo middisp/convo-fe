@@ -29,8 +29,9 @@
           alert = { message: result.message, type: "error" };
         } else {
           user.set(result.user);
-          isLoggedIn.set(true);
           token.set(result.token);
+          saveToSession(result.token);
+          isLoggedIn.set(true);
           push("/threads");
         }
       })

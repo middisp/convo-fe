@@ -1,4 +1,4 @@
-// import { wrap } from 'svelte-spa-router';
+import { wrap } from 'svelte-spa-router';
 
 import Login from './Views/Login.svelte';
 import Profile from './Views/Profile.svelte';
