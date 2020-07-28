@@ -10,18 +10,22 @@
 
   const syncLogOut = evt => {
     if (evt.key === "logout") {
-      // remove token
+      // remove token et al.
       sessionStorage.removeItem("token");
       localStorage.removeItem("user");
       localStorage.removeItem("logout");
-      push("/");
       // redirect to login
+      push("/");
     }
   };
 
   onMount(() => {
     if (!$user) {
-      push("/");
+      if (sessionStorage.getItem("user")) {
+        user.set(JSON.parse(sessionStorage.getItem("user")));
+      } else {
+        push("/");
+      }
     }
   });
 </script>

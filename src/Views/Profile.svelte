@@ -91,9 +91,6 @@
 
 <style>
   .userDetails {
-    background: #fff;
-    border: solid 1px var(--borderColor);
-    border-radius: 10px;
     margin-top: 8em;
     padding: 6em 1em 1em;
     position: relative;
@@ -124,7 +121,7 @@
   {#if alert.message}
     <UserMessage bind:alert />
   {/if}
-  <form class="userDetails">
+  <form class="card userDetails">
     <img src="/images/default-avatar.png" alt={updatedUser.name} />
     <Toggle name="edit" labelText="Edit" bind:value={isEditable} />
     <Input
@@ -164,7 +161,7 @@
     {/if}
   </form>
 
-  <form class="passwordManagement">
+  <form class="card passwordManagement">
     <legend>Password management</legend>
     <Input
       type="password"

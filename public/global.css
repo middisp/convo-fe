@@ -5,6 +5,7 @@
 	--priamaryLight: #d1d8dd;
 	--secondary: #41ccbe;
 	--bodyTextColor: #333537;
+	--bodyTextColorLight: #666;
 	--borderColor: #8c98a4;
 	--bodyBGColor: #f2f6fc;
 	--success: #bbeebc;
@@ -51,6 +52,8 @@ h1, h2, h3 {
 	font-family: "Raleway", sans-serif;
 }
 
+p {margin:0}
+
 form {
 	padding: 1em;
 	border: solid 1px var(--borderColor);
@@ -65,4 +68,10 @@ button::-moz-focus-inner,
 button:active {
 	outline: none;
 	border: 0;
+}
+
+.card {
+	background: #fff;
+	border: solid 1px var(--borderColor);
+	border-radius: 10px;
 }
