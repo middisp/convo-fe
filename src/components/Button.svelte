@@ -19,7 +19,7 @@
     border-radius: 10px;
     -webkit-appearance: none;
     width: 100%;
-    padding: 0.5em;
+    padding: 1rem;
     font-size: inherit;
     letter-spacing: inherit;
   }
@@ -28,8 +28,20 @@
     border: 0;
     color: #fff;
     background-color: var(--primary);
-    font-family: inherit;
-    font-weight: 600;
+  }
+
+  .small {
+    font-size: 1.2rem;
+    border-radius: 5px;
+  }
+
+  .inline {
+    display: inline-block;
+    width: auto;
+  }
+
+  .right {
+    margin-left: auto;
   }
 </style>
 
