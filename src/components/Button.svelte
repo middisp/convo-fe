@@ -8,31 +8,44 @@
   export let text;
   export let klass;
 
-  export let handleClick = () => {
-    dispatch("click");
-  };
+  export const handleClick = () => dispatch("click");
 </script>
 
 <style>
   button {
+    border-radius: 4px;
+    border: 0;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
     display: block;
-    border-radius: 10px;
-    -webkit-appearance: none;
-    width: 100%;
-    padding: 1rem;
+    font-family: inherit;
     font-size: inherit;
-    letter-spacing: inherit;
+    letter-spacing: 0.2px;
+    -webkit-appearance: none;
+    padding: 1rem;
+    width: 100%;
+  }
+
+  button:hover {
+    cursor: pointer;
   }
 
   .primary {
-    border: 0;
     color: #fff;
     background-color: var(--primary);
   }
 
+  .negative {
+    background-color: var(--error);
+    color: var(--errorDark);
+  }
+
+  .positive {
+    background-color: var(--success);
+    color: var(--successDark);
+  }
+
   .small {
     font-size: 1.2rem;
-    border-radius: 5px;
   }
 
   .inline {
@@ -42,6 +55,14 @@
 
   .right {
     margin-left: auto;
+  }
+
+  .pill {
+    border-radius: 5px 0 0 5px;
+  }
+
+  .pill + .pill {
+    border-radius: 0 5px 5px 0;
   }
 </style>
 

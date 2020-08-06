@@ -1,14 +1,12 @@
 <script>
-  import { user, token } from "../../store.js";
+  import { user, token, alert } from "../../store.js";
 
-  import UserMessage from "../../components/UserMessage.svelte";
   import Input from "../../components/Input.svelte";
   import Button from "../../components/Button.svelte";
+  import Article from "../../components/Article.svelte";
 
-  let alert = {};
   let email = "";
   let searchResult;
-  let mates = $user.mates;
 
   const updateUser = data => {
     fetch(`http://localhost:3001/user/update/${data._id}`, {
@@ -22,16 +20,30 @@
       .then(res => res.json())
       .then(result => {
         if (result.statusCode) {
-          alert = { message: result.message, type: "error" };
+          return alert.set({ message: result.message, type: "error" });
         }
+        if (data._id === $user._id) {
+          user.set(result);
+          email = "";
+        } else {
+          searchResult = null;
+        }
+        alert.set({ message: "Request sent", type: "success" });
       })
       .catch(e => {
-        alert = { message: e, type: "error" };
+        alert.set({ message: e, type: "error" });
         console.log(e);
       });
   };
 
   const search = () => {
+    if (!email) {
+      return alert.set({
+        message: "Please an email address",
+        type: "error"
+      });
+    }
+
     fetch(`http://localhost:3001/user/find/`, {
       method: "post",
       headers: {
@@ -42,141 +54,121 @@
     })
       .then(res => res.json())
       .then(result => {
-        if (result.statusCode !== 200) {
-          alert = { message: result.message, type: "error" };
+        if (result.statusCode) {
+          return alert.set({ message: result.message, type: "error" });
         }
         searchResult = result;
       })
       .catch(e => {
-        alert = { message: e, type: "error" };
+        alert.set({ message: e, type: "error" });
+        console.log(e);
+      });
+  };
+
+  const updateRequest = (status, userId) => {
+    fetch(`http://localhost:3001/user/mateRequest/${$user._id}`, {
+      method: "put",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `bearer: ${$token}`
+      },
+      body: JSON.stringify({ _id: userId, status: status })
+    })
+      .then(res => res.json())
+      .then(result => {
+        if (result.statusCode) {
+          return alert.set({ message: result.message, type: "error" });
+        }
+        alert.set({ message: `Request ${status}`, type: "success" });
+        user.set(result);
+      })
+      .catch(e => {
+        alert.set({ message: e, type: "error" });
         console.log(e);
       });
   };
 
   const sendRequest = () => {
-    console.log("RequestSent");
     // grab user object, update to mates[{userId: $userId, requestId: $request, status: 'pending'}]
     const updatedUser = $user;
-    updatedUser.mates.push({
+    const now = new Date();
+    updatedUser.mates.unshift({
       _id: searchResult._id,
       status: "pending",
       firstName: searchResult.firstName,
       lastName: searchResult.lastName,
       displayName: searchResult.displayName,
-      avatar: "/images/default-avatar.png"
+      avatar: "/images/default-avatar.png",
+      senderId: $user._id,
+      createdAt: now,
+      modifiedAt: now
     });
-    searchResult.mates.push({
+    searchResult.mates.unshift({
       _id: $user._id,
       status: "pending",
       firstName: $user.firstName,
       lastName: $user.lastName,
       displayName: $user.displayName,
-      avatar: "/images/default-avatar.png"
+      avatar: "/images/default-avatar.png",
+      senderId: $user._id,
+      createdAt: now,
+      modifiedAt: now
     });
     // Update user
     updateUser(updatedUser);
     // Update request
     updateUser(searchResult);
-    // update localStorage
-    user.set(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-    searchResult = null;
-    alert = { message: "Request sent", type: "success" };
   };
 </script>
-
-<style>
-  .searchResults,
-  .mates {
-    margin-top: 1rem;
-  }
-  .searchResults,
-  .mate {
-    align-items: center;
-    display: flex;
-    padding: 1rem;
-  }
-
-  .detailWrap {
-    padding-left: 1rem;
-  }
-
-  .detailWrap h1 {
-    font-size: 2rem;
-    margin: 0;
-  }
-
-  img {
-    border-radius: 10px;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-    height: 4.5rem;
-    width: 4.5rem;
-  }
-
-  .mate p {
-    color: var(--bodyTextColorLight);
-    font-size: 1.3rem;
-  }
-
-  .mate p + p {
-    margin-top: 0.5rem;
-  }
-</style>
 
 <h1>Mates</h1>
 <p>Find a mate by searching for their email address.</p>
 
-{#if alert.message}
-  <UserMessage bind:alert />
-{/if}
-
-<form class="card userDetails">
+<form class="card">
   <Input
     type="email"
     name="email"
     labelText="Email"
     bind:value={email}
-    required={false} />
+    required={false}
+    hideLabel={true}
+    placeholder="Email" />
 
   <Button type="submit" on:click={search} klass="primary" text="Search" />
+  {#if searchResult}
+    <Article data={searchResult} klass="searchResult">
+      <slot>
+        <Button
+          type="button"
+          on:click={sendRequest}
+          klass="primary small inline right"
+          text="Invite" />
+      </slot>
+    </Article>
+  {/if}
 </form>
 
-{#if searchResult}
-  <section class="card searchResults">
-    <img
-      src="/images/default-avatar.png"
-      alt={`${searchResult.firstName} ${searchResult.lastName}`} />
-    <div class="detailWrap">
-      <h1>{searchResult.firstName} {searchResult.lastName}</h1>
-      {#if searchResult.displayName !== ''}
-        <p>{searchResult.displayName}</p>
-      {/if}
-    </div>
-    <Button
-      type="button"
-      on:click={sendRequest}
-      klass="primary small inline right"
-      text="Invite" />
-  </section>
-{/if}
-
-{#if mates.length}
-  <section class="card mates">
-    {#each mates as mate}
-      <article class="mate">
-        <img src={mate.avatar} alt={`${mate.firstName} ${mate.lastName}`} />
-        <div class="detailWrap">
-          <h1>{mate.firstName} {mate.lastName}</h1>
-          {#if mate.displayName !== ''}
-            <p>{mate.displayName}</p>
-          {/if}
-          {#if mate.status === 'pending'}
-            <p>Status: {mate.status}</p>
-          {/if}
-        </div>
-      </article>
+<section class="mates">
+  {#if $user.mates.length}
+    {#each $user.mates as mate}
+      <Article data={mate} klass="card">
+        {#if mate.senderId != $user._id && mate.status === 'pending'}
+          <slot>
+            <Button
+              type="button"
+              on:click={e => updateRequest('accepted', mate._id)}
+              klass="positive small inline right pill"
+              text="Accept" />
+            <Button
+              type="button"
+              on:click={e => updateRequest('declined', mate._id)}
+              klass="negative small inline pill"
+              text="Decline" />
+          </slot>
+        {/if}
+      </Article>
     {/each}
-  </section>
-{:else}
-  <p>No Mates</p>
-{/if}
+  {:else}
+    <p>No Mates</p>
+  {/if}
+</section>

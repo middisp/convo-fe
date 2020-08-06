@@ -4,7 +4,8 @@
 
   import routes from "./routes";
   import Login from "./Views/Login.svelte";
-  import { user, isLoggedIn, token } from "./store.js";
+  import { user, isLoggedIn, token, alert } from "./store.js";
+  import UserMessage from "./components/UserMessage.svelte";
   import Header from "./components/Header.svelte";
   import Navigation from "./components/Navigation.svelte";
 
@@ -19,10 +20,14 @@
     }
   };
 
+  const routeLoaded = () => {
+    alert.set();
+  };
+
   onMount(() => {
     if (!$user) {
-      if (sessionStorage.getItem("user")) {
-        user.set(JSON.parse(sessionStorage.getItem("user")));
+      if (localStorage.getItem("user")) {
+        user.set(JSON.parse(localStorage.getItem("user")));
       } else {
         push("/");
       }
@@ -42,8 +47,13 @@
 {/if}
 
 <main id="pageContent">
+
+  {#if $alert}
+    <UserMessage />
+  {/if}
+
   {#if $user}
-    <Router {routes} />
+    <Router {routes} on:routeLoaded={routeLoaded} />
   {:else}
     <Login />
   {/if}

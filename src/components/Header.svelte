@@ -24,12 +24,14 @@
   }
 
   header {
-    display: flex;
-    width: 100%;
     background-color: var(--primary);
-    color: var(--secondary);
-    padding: 0.5em 0.5em;
     box-shadow: 0 2px 2px rgba(0, 0, 0, 0.3);
+    color: var(--secondary);
+    display: flex;
+    padding: 0.5em 0.5em;
+    position: relative;
+    width: 100%;
+    z-index: 2;
   }
 
   h1 {

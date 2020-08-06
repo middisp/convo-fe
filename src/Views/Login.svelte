@@ -1,14 +1,12 @@
 <script>
   import { push } from "svelte-spa-router";
-  import { user, isLoggedIn, token } from "../store.js";
+  import { user, isLoggedIn, token, alert } from "../store.js";
 
   import Input from "../components/Input.svelte";
   import Button from "../components/Button.svelte";
-  import UserMessage from "../components/UserMessage.svelte";
 
   let email = "";
   let password = "";
-  let alert;
 
   const saveToSession = data => {
     window.sessionStorage.setItem("token", data);
@@ -16,7 +14,10 @@
 
   const login = () => {
     if (!email || !password) {
-      return (error = "Please provide your login details");
+      return alert.set({
+        message: "Please provide your login details",
+        type: "error"
+      });
     }
     fetch("http://localhost:3001/login", {
       method: "post",
@@ -26,7 +27,7 @@
       .then(res => res.json())
       .then(result => {
         if (result.statusCode) {
-          alert = { message: result.message, type: "error" };
+          alert.set({ message: result.message, type: "error" });
         } else {
           user.set(result.user);
           token.set(result.token);
@@ -36,7 +37,7 @@
         }
       })
       .catch(e => {
-        alert = { message: e, type: "error" };
+        alert.set({ message: e, type: "error" });
         console.log(e);
       });
   };
@@ -49,12 +50,9 @@
 </style>
 
 <h1>Hi!</h1>
-{#if alert}
-  <UserMessage bind:alert />
-{/if}
 <form action="post">
   <Input
-    type="text"
+    type="email"
     name="email"
     labelText="Email"
     bind:value={email}
@@ -65,10 +63,5 @@
     labelText="Password"
     bind:value={password}
     required="required" />
-  <Button
-    type="submit"
-    on:click={login}
-    disabled={!email.length || !password.length}
-    klass="primary"
-    text="Login" />
+  <Button type="submit" on:click={login} klass="primary" text="Login" />
 </form>

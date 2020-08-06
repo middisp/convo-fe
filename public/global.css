@@ -2,7 +2,7 @@
 
 :root{
 	--primary: #032a49;
-	--priamaryLight: #d1d8dd;
+	--primaryLight: #d1d8dd;
 	--secondary: #41ccbe;
 	--bodyTextColor: #333537;
 	--bodyTextColorLight: #666;
@@ -12,6 +12,8 @@
 	--successDark: #446945;
 	--error: #ecb7b7;
 	--errorDark: #794444;
+	--warn: #ffd599;
+	--warnDark: #a35f00;
 	--fontSize: 1.6rem
 }
 
@@ -52,13 +54,11 @@ h1, h2, h3 {
 	font-family: "Raleway", sans-serif;
 }
 
-p {margin:0}
-
-form {
-	padding: 1em;
+form, .card {
+	padding: 1.6rem;
 	border: solid 1px var(--borderColor);
 	background-color: #fff;
-	border-radius: 10px;
+	border-radius: 8px;
 }
 
 form input + button {margin-top: 1.5em}
@@ -70,8 +70,6 @@ button:active {
 	border: 0;
 }
 
-.card {
-	background: #fff;
-	border: solid 1px var(--borderColor);
-	border-radius: 10px;
-}
+nav ul + button {margin-top: 3rem;}
+
+/* Mates */
