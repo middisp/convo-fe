@@ -1,6 +1,5 @@
 <script>
-  import { onMount } from "svelte";
-  import { user, token } from "../store.js";
+  import { user, token, alert } from "../store.js";
 
   import Input from "../components/Input.svelte";
   import Button from "../components/Button.svelte";
@@ -11,29 +10,7 @@
   let currentPassword = "";
   let newPassword = "";
   let confNewPassword = "";
-  let alert = {};
   let updatedUser = $user;
-
-  onMount(() => {
-    if (!$user) {
-      fetch(`http://localhost:3001/user/${$user._id}`, {
-        method: "get",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `bearer: ${$token}`
-        }
-      })
-        .then(res => res.json())
-        .then(result => {
-          if (result.statusCode) {
-            error = result;
-          } else {
-            user.set(result.user);
-          }
-        })
-        .catch(e => console.log(e));
-    }
-  });
 
   const save = () => {
     fetch(`http://localhost:3001/user/update/${updatedUser._id}`, {
@@ -47,20 +24,21 @@
       .then(res => res.json())
       .then(result => {
         if (result.statusCode) {
-          alert = { message: result.message, type: "error" };
+          return alert.set({ message: result.message, type: "error" });
         }
         user.update(result => result);
-        alert = { message: "Update successful", type: "success" };
+        isEditable = false;
+        alert.set({ message: "Update successful", type: "success" });
       })
       .catch(e => {
-        alert = { message: e, type: "error" };
+        alert.set({ message: e, type: "error" });
         console.log(e);
       });
   };
 
   const updatePassword = () => {
     if (!currentPassword || !newPassword || !confNewPassword) {
-      return (alert = { message: "Please provide passwords", type: "error" });
+      return (error = { message: "Please provide passwords", type: "error" });
     }
 
     if (newPassword !== confNewPassword) {
@@ -77,13 +55,13 @@
       .then(res => res.json())
       .then(result => {
         if (result.statusCode) {
-          alert = { message: result.message, type: "error" };
+          return alert.set({ message: result.message, type: "error" });
         }
         user.update(result => result);
-        alert = { message: "Update successful", type: "success" };
+        alert.set({ message: "Update successful", type: "success" });
       })
       .catch(e => {
-        alert = { message: e, type: "error" };
+        alert.set({ message: e, type: "error" });
         console.log(e);
       });
   };
@@ -118,9 +96,6 @@
 </style>
 
 {#if $user}
-  {#if alert.message}
-    <UserMessage bind:alert />
-  {/if}
   <form class="card userDetails">
     <img src="/images/default-avatar.png" alt={updatedUser.name} />
     <Toggle name="edit" labelText="Edit" bind:value={isEditable} />

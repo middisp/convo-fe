@@ -2,7 +2,7 @@
   import { push } from "svelte-spa-router";
   import RouterLink from "../components/RouterLink.svelte";
   import Button from "../components/Button.svelte";
-  import { navOpen, user, isLoggedIn } from "../store.js";
+  import { navOpen, user, isLoggedIn, alert } from "../store.js";
 
   const logout = () => {
     // remove token
@@ -13,15 +13,19 @@
     navOpen.set(false);
     isLoggedIn.set(false);
     user.set();
+    alert.set();
     push("/");
   };
 </script>
 
 <style>
   nav {
-    background-color: var(--primary);
+    background-color: var(--primaryLight);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     min-height: calc(100vh - 53px);
-    padding: 0.5em;
+    padding: 3rem 1.5rem;
     position: absolute;
     transition: transform 0.25s ease-out;
     transform: translate(-100%, 0);
@@ -39,7 +43,7 @@
   }
 
   li {
-    color: var(--secondary);
+    color: var(--primary);
   }
 
   li + li {

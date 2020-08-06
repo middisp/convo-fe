@@ -1,28 +1,33 @@
 <script>
-  export let alert;
+  import { alert } from "../store";
 </script>
 
 <style>
   aside {
-    border-radius: 10px;
+    border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
     font-weight: 600;
-    margin-bottom: 1.5em;
-    padding: 0.5em;
+    margin-bottom: 1.5rem;
+    padding: 1rem 4rem 1rem 1rem;
     position: relative;
   }
 
   button {
     background-color: transparent;
-    border: 0;
+    border: none;
     color: inherit;
     display: block;
-    font-size: 1.2em;
+    font-size: 2rem;
+    height: 30px;
+    line-height: 30px;
+    padding: 0;
     position: absolute;
-    right: 0.5em;
-    top: 0.25em;
+    right: 0.5rem;
+    top: 50%;
     text-decoration: none;
+    transform: translateY(-50%);
     -webkit-appearance: none;
+    width: 30px;
   }
 
   p {
@@ -48,7 +53,7 @@
   }
 </style>
 
-<aside class={alert.type}>
-  <button on:click={() => (alert = null)}>&times;</button>
-  <p>{alert.message}</p>
+<aside class={$alert.type}>
+  <button on:click={() => alert.set()}>&times;</button>
+  <p>{$alert.message}</p>
 </aside>
