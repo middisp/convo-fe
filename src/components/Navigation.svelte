@@ -2,6 +2,7 @@
   import { push } from "svelte-spa-router";
   import RouterLink from "../components/RouterLink.svelte";
   import Button from "../components/Button.svelte";
+  import Icon from "../components/Icon.svelte";
   import { navOpen, user, isLoggedIn, alert } from "../store.js";
 
   const logout = () => {
@@ -21,6 +22,7 @@
 <style>
   nav {
     background-color: var(--primaryLight);
+    box-shadow: 1px 0px 15px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -43,23 +45,28 @@
   }
 
   li {
+    display: flex;
+    align-items: center;
     color: var(--primary);
   }
 
   li + li {
-    margin-top: 0.5em;
+    margin-top: 1.5rem;
   }
 </style>
 
 <nav class={$navOpen ? 'show' : ''}>
   <ul>
     <li>
+      <Icon icon="profile" />
       <RouterLink page={{ path: '/profile', name: 'Profile' }} />
     </li>
     <li>
+      <Icon icon="mates" />
       <RouterLink page={{ path: '/mates', name: 'Mates' }} />
     </li>
     <li>
+      <Icon icon="thread" />
       <RouterLink page={{ path: '/threads', name: 'Threads' }} />
     </li>
   </ul>
