@@ -7,7 +7,7 @@
   export let required;
   export let disabled = false;
   export let hideLabel = false;
-  export let placeholder;
+  export let placeholder = null;
 
   const handleInput = e => {
     value = type.match(/^(number|range)$/) ? +e.target.value : e.target.value;
@@ -67,7 +67,7 @@
     {labelText}{required ? '*' : ''}
   </label>
 {/if}
-{#if error}
+{#if error && !hideLabel}
   <span class="error">Required field</span>
 {/if}
 <input
