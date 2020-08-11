@@ -26,7 +26,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: calc(100vh - 53px);
+    min-height: calc(100vh - 54px);
     padding: 3rem 1.5rem;
     position: absolute;
     transition: transform 0.25s ease-out;
