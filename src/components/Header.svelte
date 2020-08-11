@@ -24,6 +24,7 @@
   }
 
   header {
+    align-items: center;
     background-color: var(--primary);
     box-shadow: 0 2px 2px rgba(0, 0, 0, 0.3);
     color: var(--secondary);
@@ -46,11 +47,11 @@
     color: inherit;
     display: flex;
     flex-direction: column;
-    height: 35px;
-    justify-content: space-between;
+    height: 30px;
+    justify-content: space-around;
     margin-right: 1.6rem;
     order: 1;
-    padding: 0.8rem 0;
+    padding: 0;
     width: 30px;
   }
 
@@ -70,9 +71,12 @@
     transition: all 0.25s linear;
   }
 
-  button.open .bar-one {
+  button.open .bar-one,
+  button.open .bar-three {
     transform-origin: right center;
-    transform: rotate(-39deg);
+  }
+  button.open .bar-one {
+    transform: rotate(-44deg);
   }
 
   button.open .bar-two {
@@ -80,8 +84,7 @@
   }
 
   button.open .bar-three {
-    transform-origin: right center;
-    transform: rotate(40deg);
+    transform: rotate(44deg);
   }
 
   .dotAnim {
